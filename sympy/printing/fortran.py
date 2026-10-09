@@ -96,18 +96,14 @@ class FCodePrinter(CodePrinter):
         intc: {'iso_c_binding': 'c_int'}
     }
 
-    _default_settings: dict[str, Any] = {
-        'order': None,
-        'full_prec': 'auto',
+    _default_settings: dict[str, Any] = dict(CodePrinter._default_settings, **{
         'precision': 17,
         'user_functions': {},
-        'human': True,
-        'allow_unknown_functions': False,
         'source_format': 'fixed',
         'contract': True,
         'standard': 77,
         'name_mangling': True,
-    }
+    })
 
     _operators = {
         'and': '.and.',
@@ -300,15 +296,23 @@ class FCodePrinter(CodePrinter):
         else:
             return CodePrinter._print_Add(self, expr)
 
+    def _eval_function(self, expr):
+        prec = self._settings['precision']
+        args = [N(a, prec) for a in expr.args]
+        return expr.func(*args)
+
+    def parenthesize(self, item, level, strict=False):
+        if isinstance(item, Function):
+            item = self._eval_function(item)
+        return super().parenthesize(item, level, strict)
+
     def _print_Function(self, expr):
         # All constant function args are evaluated as floats
-        prec =  self._settings['precision']
-        args = [N(a, prec) for a in expr.args]
-        eval_expr = expr.func(*args)
+        eval_expr = self._eval_function(expr)
         if not isinstance(eval_expr, Function):
             return self._print(eval_expr)
         else:
-            return CodePrinter._print_Function(self, expr.func(*args))
+            return CodePrinter._print_Function(self, eval_expr)
 
     def _print_Mod(self, expr):
         # NOTE : Fortran has the functions mod() and modulo(). modulo() behaves
@@ -380,9 +384,6 @@ class FCodePrinter(CodePrinter):
         inds = [ self._print(i) for i in expr.indices ]
         return "%s(%s)" % (self._print(expr.base.label), ", ".join(inds))
 
-    def _print_Idx(self, expr):
-        return self._print(expr.label)
-
     def _print_AugmentedAssignment(self, expr):
         lhs_code = self._print(expr.lhs)
         rhs_code = self._print(expr.rhs)
@@ -391,9 +392,12 @@ class FCodePrinter(CodePrinter):
 
     def _print_sum_(self, sm):
         params = self._print(sm.array)
-        if sm.dim != None: # Must use '!= None', cannot use 'is not None'
+        # Must use '!= None', cannot use 'is not None'
+        if sm.dim != None:  # noqa: E711
             params += ', ' + self._print(sm.dim)
-        if sm.mask != None: # Must use '!= None', cannot use 'is not None'
+
+        # Must use '!= None', cannot use 'is not None'
+        if sm.mask != None:  # noqa: E711
             params += ', mask=' + self._print(sm.mask)
         return '%s(%s)' % (sm.__class__.__name__.rstrip('_'), params)
 
@@ -476,7 +480,8 @@ class FCodePrinter(CodePrinter):
                 alloc=', allocatable' if allocatable in var.attrs else '',
                 s=self._print(var.symbol)
             )
-            if val != None: # Must be "!= None", cannot be "is not None"
+            # Must be "!= None", cannot be "is not None"
+            if val != None:  # noqa: E711
                 result += ' = %s' % self._print(val)
         else:
             if value_const in var.attrs or val:
@@ -763,9 +768,11 @@ class FCodePrinter(CodePrinter):
 
     def _print_use(self, use):
         result = 'use %s' % self._print(use.namespace)
-        if use.rename != None: # Must be '!= None', cannot be 'is not None'
+        # Must be '!= None', cannot be 'is not None'
+        if use.rename != None:  # noqa: E711
             result += ', ' + ', '.join([self._print(rnm) for rnm in use.rename])
-        if use.only != None: # Must be '!= None', cannot be 'is not None'
+        # Must be '!= None', cannot be 'is not None'
+        if use.only != None:  # noqa: E711
             result += ', only: ' + ', '.join([self._print(nly) for nly in use.only])
         return result
 
@@ -778,6 +785,17 @@ class FCodePrinter(CodePrinter):
     def _print_ArrayConstructor(self, ac):
         fmtstr = "[%s]" if self._settings["standard"] >= 2003 else '(/%s/)'
         return fmtstr % ', '.join((self._print(arg) for arg in ac.elements))
+
+    def _print_KeywordFunctionCall(self, expr):
+        args = [self._print(arg) for arg in expr.function_args]
+
+        for key, value in expr.keyword_args.items():
+            args.append(f"{key}={self._print(value)}")
+
+        return '{name}({args})'.format(
+            name=self._print(expr.name),
+            args=', '.join(args)
+        )
 
     def _print_ArrayElement(self, elem):
         return '{symbol}({idxs})'.format(

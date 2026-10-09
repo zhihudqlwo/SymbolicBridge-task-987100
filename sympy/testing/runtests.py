@@ -11,6 +11,7 @@ Goals:
 * portable
 
 """
+from __future__ import annotations
 
 import os
 import sys
@@ -34,6 +35,7 @@ import tempfile
 import warnings
 from contextlib import contextmanager
 from inspect import unwrap
+from pathlib import Path
 
 from sympy.core.cache import clear_cache
 from sympy.external import import_module
@@ -125,19 +127,13 @@ if IS_WINDOWS:
 
 def convert_to_native_paths(lst):
     """
-    Converts a list of '/' separated paths into a list of
-    native (os.sep separated) paths and converts to lowercase
-    if the system is case insensitive.
+    Convert paths using '/' or '\\' separators to normalized native
+    paths and normalize case if the system is case insensitive.
     """
     newlst = []
-    for i, rv in enumerate(lst):
-        rv = os.path.join(*rv.split("/"))
-        # on windows the slash after the colon is dropped
-        if sys.platform == "win32":
-            pos = rv.find(':')
-            if pos != -1:
-                if rv[pos + 1] != '\\':
-                    rv = rv[:pos + 1] + '\\' + rv[pos + 1:]
+    for rv in lst:
+        rv = rv.replace("/", os.sep).replace("\\", os.sep)
+        rv = os.path.normpath(rv)
         newlst.append(os.path.normcase(rv))
     return newlst
 
@@ -153,20 +149,27 @@ def get_sympy_dir():
     return os.path.normcase(sympy_dir)
 
 
-def setup_pprint():
+def setup_pprint(disable_line_wrap=True):
     from sympy.interactive.printing import init_printing
     from sympy.printing.pretty.pretty import pprint_use_unicode
     import sympy.interactive.printing as interactive_printing
+    from sympy.printing.pretty import stringpict
+
+    # Prevent init_printing() in doctests from affecting other doctests
+    interactive_printing.NO_GLOBAL = True
 
     # force pprint to be in ascii mode in doctests
     use_unicode_prev = pprint_use_unicode(False)
 
+    # disable line wrapping for pprint() outputs
+    wrap_line_prev = stringpict._GLOBAL_WRAP_LINE
+    if disable_line_wrap:
+        stringpict._GLOBAL_WRAP_LINE = False
+
     # hook our nice, hash-stable strprinter
     init_printing(pretty_print=False)
 
-    # Prevent init_printing() in doctests from affecting other doctests
-    interactive_printing.NO_GLOBAL = True
-    return use_unicode_prev
+    return use_unicode_prev, wrap_line_prev
 
 
 @contextmanager
@@ -216,10 +219,6 @@ def run_in_subprocess_with_hash_randomization(
     use a predetermined seed for tests, we must start Python in a separate
     subprocess.
 
-    Hash randomization was added in the minor Python versions 2.6.8, 2.7.3,
-    3.1.5, and 3.2.3, and is enabled by default in all Python versions after
-    and including 3.3.0.
-
     Examples
     ========
 
@@ -238,14 +237,6 @@ def run_in_subprocess_with_hash_randomization(
     # Note, we must return False everywhere, not None, as subprocess.call will
     # sometimes return None.
 
-    # First check if the Python version supports hash randomization
-    # If it does not have this support, it won't recognize the -R flag
-    p = subprocess.Popen([command, "-RV"], stdout=subprocess.PIPE,
-                         stderr=subprocess.STDOUT, cwd=cwd)
-    p.communicate()
-    if p.returncode != 0:
-        return False
-
     hash_seed = os.getenv("PYTHONHASHSEED")
     if not hash_seed:
         os.environ["PYTHONHASHSEED"] = str(random.randrange(2**32))
@@ -260,8 +251,8 @@ def run_in_subprocess_with_hash_randomization(
                      (module, function, function, repr(function_args),
                       repr(function_kwargs)))
 
+    p = subprocess.Popen([command, "-R", "-c", commandstring], cwd=cwd)
     try:
-        p = subprocess.Popen([command, "-R", "-c", commandstring], cwd=cwd)
         p.communicate()
     except KeyboardInterrupt:
         p.wait()
@@ -272,7 +263,7 @@ def run_in_subprocess_with_hash_randomization(
             del os.environ["PYTHONHASHSEED"]
         else:
             os.environ["PYTHONHASHSEED"] = hash_seed
-        return p.returncode
+    return p.returncode
 
 
 def run_all_tests(test_args=(), test_kwargs=None,
@@ -693,8 +684,11 @@ def _get_doctest_blacklist():
             "examples/intermediate/sample.py",
             "examples/intermediate/mplot2d.py",
             "examples/intermediate/mplot3d.py",
+            "doc/src/modules/diffgeom.rst",
             "doc/src/modules/numeric-computation.rst",
             "doc/src/explanation/best-practices.md",
+            "doc/src/tutorials/physics/biomechanics/biomechanical-model-example.rst",
+            "doc/src/tutorials/physics/biomechanics/biomechanics.rst",
         ])
     else:
         if import_module('matplotlib') is None:
@@ -787,6 +781,7 @@ def _doctest(*paths, **kwargs):
     ``doctest()`` and ``test()`` for more information.
     """
     from sympy.printing.pretty.pretty import pprint_use_unicode
+    from sympy.printing.pretty import stringpict
 
     normal = kwargs.get("normal", False)
     verbose = kwargs.get("verbose", False)
@@ -887,7 +882,7 @@ def _doctest(*paths, **kwargs):
             continue
         old_displayhook = sys.displayhook
         try:
-            use_unicode_prev = setup_pprint()
+            use_unicode_prev, wrap_line_prev = setup_pprint()
             out = sympytestfile(
                 rst_file, module_relative=False, encoding='utf-8',
                 optionflags=pdoctest.ELLIPSIS | pdoctest.NORMALIZE_WHITESPACE |
@@ -901,6 +896,7 @@ def _doctest(*paths, **kwargs):
             import sympy.interactive.printing as interactive_printing
             interactive_printing.NO_GLOBAL = False
             pprint_use_unicode(use_unicode_prev)
+            stringpict._GLOBAL_WRAP_LINE = wrap_line_prev
 
         rstfailed, tested = out
         if tested:
@@ -1234,7 +1230,7 @@ class SymPyTests:
             except ImportError:
                 reporter.import_error(filename, sys.exc_info())
                 return
-            except Exception:
+            except Exception: # noqa: BLE001
                 reporter.test_exception(sys.exc_info())
 
             clear_cache()
@@ -1304,7 +1300,7 @@ class SymPyTests:
                     reporter.test_skip("KeyboardInterrupt")
                 else:
                     raise
-            except Exception:
+            except Exception: # noqa: BLE001
                 if timeout:
                     signal.alarm(0)  # Disable the alarm. It could not be handled before.
                 t, v, tr = sys.exc_info()
@@ -1406,6 +1402,7 @@ class SymPyDocTests:
         from io import StringIO
         import sympy.interactive.printing as interactive_printing
         from sympy.printing.pretty.pretty import pprint_use_unicode
+        from sympy.printing.pretty import stringpict
 
         rel_name = filename[len(self._root_dir) + 1:]
         dirname, file = os.path.split(filename)
@@ -1473,7 +1470,7 @@ class SymPyDocTests:
                 # comes by default with a "from sympy import *"
                 #exec('from sympy import *') in test.globs
             old_displayhook = sys.displayhook
-            use_unicode_prev = setup_pprint()
+            use_unicode_prev, wrap_line_prev = setup_pprint()
 
             try:
                 f, t = runner.run(test,
@@ -1489,6 +1486,7 @@ class SymPyDocTests:
                 sys.displayhook = old_displayhook
                 interactive_printing.NO_GLOBAL = False
                 pprint_use_unicode(use_unicode_prev)
+                stringpict._GLOBAL_WRAP_LINE = wrap_line_prev
 
         self._reporter.leaving_filename()
 
@@ -1564,8 +1562,7 @@ class SymPyDocTests:
                   '    exit("wrong number of args")\n')
 
             for viewer in disable_viewers:
-                with open(os.path.join(tempdir, viewer), 'w') as fh:
-                    fh.write(vw)
+                Path(os.path.join(tempdir, viewer)).write_text(vw)
 
                 # make the file executable
                 os.chmod(os.path.join(tempdir, viewer),

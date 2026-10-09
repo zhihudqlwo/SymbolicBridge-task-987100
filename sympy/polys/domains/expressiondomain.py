@@ -1,10 +1,13 @@
 """Implementation of :class:`ExpressionDomain` class. """
+from __future__ import annotations
 
 
 from sympy.core import sympify, SympifyError
+from sympy.polys.domains.domainelement import DomainElement
 from sympy.polys.domains.characteristiczero import CharacteristicZero
 from sympy.polys.domains.field import Field
 from sympy.polys.domains.simpledomain import SimpleDomain
+from sympy.polys.domains.conjugatedomain import ConjugateDomain
 from sympy.polys.polyutils import PicklableWithSlots
 from sympy.utilities import public
 
@@ -12,12 +15,12 @@ eflags = {"deep": False, "mul": True, "power_exp": False, "power_base": False,
               "basic": False, "multinomial": False, "log": False}
 
 @public
-class ExpressionDomain(Field, CharacteristicZero, SimpleDomain):
+class ExpressionDomain(Field, CharacteristicZero, SimpleDomain, ConjugateDomain):
     """A class for arbitrary expressions. """
 
     is_SymbolicDomain = is_EX = True
 
-    class Expression(PicklableWithSlots):
+    class Expression(DomainElement, PicklableWithSlots):
         """An arbitrary expression. """
 
         __slots__ = ('ex',)
@@ -37,6 +40,9 @@ class ExpressionDomain(Field, CharacteristicZero, SimpleDomain):
         def __hash__(self):
             return hash((self.__class__.__name__, self.ex))
 
+        def parent(self):
+            return EX
+
         def as_expr(f):
             return f.ex
 
@@ -51,6 +57,9 @@ class ExpressionDomain(Field, CharacteristicZero, SimpleDomain):
 
         def __abs__(f):
             return f.__class__(abs(f.ex))
+
+        def __pos__(f):
+            return f
 
         def __neg__(f):
             return f.__class__(-f.ex)
@@ -208,8 +217,16 @@ class ExpressionDomain(Field, CharacteristicZero, SimpleDomain):
         """Convert a ``GaussianRational`` object to ``dtype``. """
         return K1(K0.to_sympy(a))
 
+    def from_AlgebraicField(K1, a, K0):
+        """Convert an ``ANP`` object to ``dtype``. """
+        return K1(K0.to_sympy(a))
+
     def from_RealField(K1, a, K0):
         """Convert a mpmath ``mpf`` object to ``dtype``. """
+        return K1(K0.to_sympy(a))
+
+    def from_ComplexField(K1, a, K0):
+        """Convert a mpmath ``mpc`` object to ``dtype``. """
         return K1(K0.to_sympy(a))
 
     def from_PolynomialRing(K1, a, K0):
@@ -261,6 +278,10 @@ class ExpressionDomain(Field, CharacteristicZero, SimpleDomain):
 
     def lcm(self, a, b):
         return a.lcm(b)
+
+    def conjugate(self, a):
+        """Returns the complex conjugate of ``a``."""
+        return self.dtype(a.ex.conjugate())
 
 
 EX = ExpressionDomain()

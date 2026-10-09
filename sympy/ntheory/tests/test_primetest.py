@@ -1,12 +1,16 @@
+from __future__ import annotations
 from math import gcd
 
 from sympy.ntheory.generate import Sieve, sieve
 from sympy.ntheory.primetest import (mr, _lucas_extrastrong_params, is_lucas_prp, is_square,
-                                     is_strong_lucas_prp, is_extra_strong_lucas_prp, isprime, is_euler_pseudoprime,
-                                     is_gaussian_prime, is_fermat_pseudoprime, is_euler_jacobi_pseudoprime)
+                                     is_strong_lucas_prp, is_extra_strong_lucas_prp,
+                                     proth_test, isprime, is_euler_pseudoprime,
+                                     is_gaussian_prime, is_fermat_pseudoprime, is_euler_jacobi_pseudoprime,
+                                     MERSENNE_PRIME_EXPONENTS, _lucas_lehmer_primality_test,
+                                     is_mersenne_prime)
 
 from sympy.testing.pytest import slow, raises
-from sympy.core.numbers import I
+from sympy.core.numbers import I, Float
 
 
 def test_is_fermat_pseudoprime():
@@ -109,6 +113,35 @@ def test_prps():
         72389, 73919, 75077]
 
 
+def test_proth_test():
+    # Proth number
+    A080075 = [3, 5, 9, 13, 17, 25, 33, 41, 49, 57, 65,
+               81, 97, 113, 129, 145, 161, 177, 193]
+    # Proth prime
+    A080076 = [3, 5, 13, 17, 41, 97, 113, 193]
+
+    for n in range(200):
+        if n in A080075:
+            assert proth_test(n) == (n in A080076)
+        else:
+            raises(ValueError, lambda: proth_test(n))
+
+
+def test_lucas_lehmer_primality_test():
+    for p in sieve.primerange(3, 100):
+        assert _lucas_lehmer_primality_test(p) == (p in MERSENNE_PRIME_EXPONENTS)
+
+
+def test_is_mersenne_prime():
+    assert is_mersenne_prime(-3) is False
+    assert is_mersenne_prime(3) is True
+    assert is_mersenne_prime(10) is False
+    assert is_mersenne_prime(127) is True
+    assert is_mersenne_prime(511) is False
+    assert is_mersenne_prime(131071) is True
+    assert is_mersenne_prime(2147483647) is True
+
+
 def test_isprime():
     s = Sieve()
     s.extend(100000)
@@ -177,7 +210,8 @@ def test_isprime():
     sieve.extend(3000)
     assert isprime(2819)
     assert not isprime(2931)
-    assert not isprime(2.0)
+    raises(ValueError, lambda: isprime(2.0))
+    raises(ValueError, lambda: isprime(Float(2)))
 
 
 def test_is_square():
@@ -195,3 +229,8 @@ def test_is_gaussianprime():
     assert is_gaussian_prime(7)
     assert is_gaussian_prime(2 + 3*I)
     assert not is_gaussian_prime(2 + 2*I)
+
+
+def test_issue_27145():
+    #https://github.com/sympy/sympy/issues/27145
+    assert [mr(i,[2,3,5,7]) for i in (1, 2, 6)] == [False, True, False]

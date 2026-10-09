@@ -1,3 +1,4 @@
+from __future__ import annotations
 from sympy.assumptions.ask import (Q, ask)
 from sympy.core.add import Add
 from sympy.core.containers import Tuple
@@ -15,15 +16,15 @@ from sympy.functions.elementary.complexes import (Abs, arg, conjugate, im, re)
 from sympy.functions.elementary.exponential import (LambertW, exp, log)
 from sympy.functions.elementary.hyperbolic import (atanh, cosh, sinh, tanh)
 from sympy.functions.elementary.integers import floor
-from sympy.functions.elementary.miscellaneous import (cbrt, root, sqrt)
+from sympy.functions.elementary.miscellaneous import (cbrt, root, sqrt, Max, Min)
 from sympy.functions.elementary.piecewise import Piecewise
 from sympy.functions.elementary.trigonometric import (acos, asin, atan, atan2, cos, sec, sin, tan)
 from sympy.functions.special.error_functions import (erf, erfc, erfcinv, erfinv)
 from sympy.integrals.integrals import Integral
 from sympy.logic.boolalg import (And, Or)
 from sympy.matrices.dense import Matrix
-from sympy.matrices import SparseMatrix
-from sympy.polys.polytools import Poly
+from sympy.matrices import MatrixSymbol, SparseMatrix
+from sympy.polys.polytools import Poly, groebner
 from sympy.printing.str import sstr
 from sympy.simplify.radsimp import denom
 from sympy.solvers.solvers import (nsolve, solve, solve_linear)
@@ -116,6 +117,15 @@ def test_guess_transcendental():
     assert guess_solve_strategy(a*x**b - y, x)  # == GS_TRANSCENDENTAL
 
 
+def test_solve_rejects_nonfinite_denominator():
+    # 7870: x = 0 is outside the domain of 1/log(x)
+    assert solve(x/log(x), x) == []
+    assert solve(x**2/log(x)**2, x) == []
+    # a solution that does not singularize any denominator is kept
+    assert solve(x/(x - 2), x) == [0]
+
+
+@slow
 def test_solve_args():
     # equation container, issue 5113
     ans = {x: -3, y: 1}
@@ -329,7 +339,6 @@ def test_quintics_2():
         CRootOf(x**5 - 6*x**3 - 6*x**2 + x - 6, 3),
         CRootOf(x**5 - 6*x**3 - 6*x**2 + x - 6, 4)]
 
-
 def test_quintics_3():
     y = x**5 + x**3 - 2**Rational(1, 3)
     assert solve(y) == solve(-y) == []
@@ -423,6 +432,7 @@ def test_linear_system_function():
         a(0, 0), a(0, 1), a(1, 0), a(1, 1)) == {a(1, 0): -a(1, 1), a(0, 0): -a(0, 1)}
 
 
+@slow
 def test_linear_system_symbols_doesnt_hang_1():
 
     def _mk_eqs(wy):
@@ -434,7 +444,7 @@ def test_linear_system_symbols_doesnt_hang_1():
         y1s = symbols('y1_:{}'.format(wy), real=True)
         c = symbols('c_:{}'.format(order+1), real=True)
 
-        expr = sum([coeff*x**o for o, coeff in enumerate(c)])
+        expr = sum(coeff*x**o for o, coeff in enumerate(c))
         eqs = []
         for i in range(wy):
             eqs.append(expr.diff(x, i).subs({x: x0}) - y0s[i])
@@ -638,14 +648,17 @@ def test_solve_transcendental():
     # issue 15325
     assert solve(y**(1/x) - z, x) == [log(y)/log(z)]
 
-    # issue 25685 (basic trig identies should give simple solutions)
+    # issue 25685 (basic trig identities should give simple solutions)
     for yi in [cos(2*x),sin(2*x),cos(x - pi/3)]:
         sol = solve([cos(x) - S(3)/5, yi - y])
         assert (sol[0][y] + sol[1][y]).is_Rational, (yi,sol)
     # don't allow massive expansion
     assert solve(cos(1000*x) - S.Half) == [pi/3000, pi/600]
-    assert solve(cos(x - 1000*y) - 1, x) == [2*atan(tan(500*y))]
-    assert solve(cos(x + y + z) - 1, x) == [-2*atan(tan(y/2 + z/2))]
+    assert solve(cos(x - 1000*y) - 1, x) == [1000*y, 1000*y + 2*pi]
+    assert solve(cos(x + y + z) - 1, x) == [-y - z, -y - z + 2*pi]
+
+    # issue 26008
+    assert solve(sin(x + pi/6)) == [-pi/6, 5*pi/6]
 
 
 def test_solve_for_functions_derivatives():
@@ -706,7 +719,8 @@ def test_issue_3725():
     assert solve(e, f(x).diff(x)) in [[(2 - x)/f(x)], [-((x - 2)/f(x))]]
 
 
-def test_issue_3870():
+def test_solve_Matrix():
+    # https://github.com/sympy/sympy/issues/3870
     a, b, c, d = symbols('a b c d')
     A = Matrix(2, 2, [a, b, c, d])
     B = Matrix(2, 2, [0, 2, -3, 0])
@@ -723,6 +737,16 @@ def test_issue_3870():
     assert solve([Eq(A*B, B*A)], [a, b, c, d]) == {a: d, b: Rational(-2, 3)*c}
     assert solve([Eq(A*C, C*A)], [a, b, c, d]) == {a: d - c, b: Rational(2, 3)*c}
     assert solve([Eq(A*B, B*A), Eq(A*C, C*A)], [a, b, c, d]) == {a: d, b: 0, c: 0}
+
+    # https://github.com/sympy/sympy/issues/27854
+    m, n = symbols("m n")
+    A = MatrixSymbol("A", m, n)
+    x = MatrixSymbol("x", n, 1)
+    b = MatrixSymbol('b', m, 1)
+    r = A * x - b
+    f = r.T * r
+    grad_f = f.diff(x)
+    raises(ValueError, lambda: solve(grad_f, x))
 
 
 def test_solve_linear():
@@ -751,6 +775,8 @@ def test_solve_linear():
     assert solve_linear(eq) == (0, 1)
     eq = cos(x)**2 + sin(x)**2  # = 1
     assert solve_linear(eq) == (0, 1)
+    assert solve_linear(5) == (0, 1)
+    assert solve_linear(0) == (0, 1)
     raises(ValueError, lambda: solve_linear(Eq(x, 3), 3))
 
 
@@ -1735,6 +1761,7 @@ def test_high_order_roots():
     assert set(solve(s)) == set(Poly(s*4, domain='ZZ').all_roots())
 
 
+@slow
 def test_minsolve_linear_system():
     pqt = {"quick": True, "particular": True}
     pqf = {"quick": False, "particular": True}
@@ -1898,6 +1925,7 @@ def test_issues_6819_6820_6821_6248_8692_25777_25779():
     x = symbols('x')
     assert solve(2**x + 4**x) == [I*pi/log(2)]
 
+
 def test_issue_17638():
 
     assert solve(((2-exp(2*x))*exp(x))/(exp(2*x)+2)**2 > 0, x) == (-oo < x) & (x < log(2)/2)
@@ -2022,14 +2050,11 @@ def test_lambert_bivariate():
         exp(-z + LambertW(2*z**4*exp(2*z))/2)/z]
     # cases when p != S.One
     # issue 4271
-    ans = solve((a/x + exp(x/2)).diff(x, 2), x)
-    x0 = (-a)**Rational(1, 3)
-    x1 = sqrt(3)*I
-    x2 = x0/6
-    assert ans == [
-        6*LambertW(x0/3),
-        6*LambertW(x2*(-x1 - 1)),
-        6*LambertW(x2*(x1 - 1))]
+    assert solve((a/x + exp(x/2)).diff(x, 2), x) == [
+        6*LambertW(-a**(S(1)/3)/3),
+        6*LambertW(a**(S(1)/3)*(1 - sqrt(3)*I)/6),
+        6*LambertW(a**(S(1)/3)*(1 + sqrt(3)*I)/6),
+    ]
     assert solve((1/x + exp(x/2)).diff(x, 2), x) == \
                 [6*LambertW(Rational(-1, 3)), 6*LambertW(Rational(1, 6) - sqrt(3)*I/6), \
                 6*LambertW(Rational(1, 6) + sqrt(3)*I/6), 6*LambertW(Rational(-1, 3), -1)]
@@ -2124,7 +2149,7 @@ def test_issue_5114_6611():
     ans = solve(list(eqs), list(v), simplify=False)
     # If time is taken to simplify then then 2617 below becomes
     # 1168 and the time is about 50 seconds instead of 2.
-    assert sum([s.count_ops() for s in ans.values()]) <= 3270
+    assert sum(s.count_ops() for s in ans.values()) <= 3270
 
 
 def test_det_quick():
@@ -2567,6 +2592,18 @@ def test_issue_20747():
     assert solve(eq, HT) == sol
 
 
+def test_issue_27001():
+    assert solve((x, x**2), (x, y, z), dict=True) == [{x: 0}]
+    s = a1, a2, a3, a4, a5 = symbols('a1:6')
+    eqs = [8*a1**4*a2 + 4*a1**2*a2**3 - 8*a1**2*a2*a4 + a2**5/2 - 2*a2**3*a4 +
+        8*a2*a3**2 + 2*a2*a4**2 + 8*a2*a5, 12*a1**4 + 6*a1**2*a2**2 -
+        8*a1**2*a4 + 3*a2**4/4 - 2*a2**2*a4 + 4*a3**2 + a4**2 + 4*a5, 16*a1**3
+        + 4*a1*a2**2 - 8*a1*a4, -8*a1**2*a2 - 2*a2**3 + 4*a2*a4]
+    sol = [{a4: 2*a1**2 + a2**2/2, a5: -a3**2}, {a1: 0, a2: 0, a5: -a3**2 - a4**2/4}]
+    assert solve(eqs, s, dict=True) == sol
+    assert (g:=solve(groebner(eqs, s), dict=True)) == sol, g
+
+
 def test_issue_20902():
     f = (t / ((1 + t) ** 2))
     assert solve(f.subs({t: 3 * x + 2}).diff(x) > 0, x) == (S(-1) < x) & (x < S(-1)/3)
@@ -2669,6 +2706,7 @@ def test_solve_undetermined_coeffs_issue_23927():
         r: (A**2 + A*sqrt(A**2 + B**2) + B**2)/(A + sqrt(A**2 + B**2))/-1
         }]
 
+
 def test_issue_24368():
     # Ideally these would produce a solution, but for now just check that they
     # don't fail with a RuntimeError
@@ -2698,3 +2736,15 @@ def test_solve_Piecewise():
         (46*x - 3*(x - 6)**2/2 - 276, (x >= 6) & (x < 10)),
         (0, x < 10),  # this will simplify away
         (S.NaN,True)))
+
+
+def test_solve_maxmin():
+    variables = (x, y)
+    system = [Eq(y, Max(x, -x)), Eq(y, 1)]
+    assert solve(system, variables) == [(-1, 1), (1, 1)]
+    system = [Eq(y, Min(x, -x)), Eq(y, 2*x+3)]
+    assert solve(system, variables) == [(-3, -3)]
+    system = [Eq(y, Max(x ** 2, x)), Eq(y, 10 * x + 17)]
+    assert solve(system, variables) == [(5 - sqrt(42), 67 - 10*sqrt(42)), (5 + sqrt(42), 10*sqrt(42) + 67)]
+    system = [Eq(y, Max(3*x, -(S(1)/3)*x)), Eq(y, -(x**2)+10)]
+    assert solve(system, variables) == [(-3, 1), (2, 6)]

@@ -1,4 +1,5 @@
 """Gosper's algorithm for hypergeometric summation. """
+from __future__ import annotations
 
 from sympy.core import S, Dummy, symbols
 from sympy.polys import Poly, parallel_poly_from_expr, factor
@@ -55,12 +56,7 @@ def gosper_normal(f, g, n, polys=True):
     D = Poly(n + h, n, h, domain=opt.domain)
 
     R = A.resultant(B.compose(D))
-    roots = set(R.ground_roots().keys())
-
-    for r in set(roots):
-        if not r.is_Integer or r < 0:
-            roots.remove(r)
-
+    roots = {r for r in R.ground_roots().keys() if r.is_Integer and r >= 0}
     for i in sorted(roots):
         d = A.gcd(B.shift(+i))
 
@@ -117,25 +113,24 @@ def gosper_term(f, n):
     A, B, C = gosper_normal(p, q, n)
     B = B.shift(-1)
 
-    N = S(A.degree())
-    M = S(B.degree())
-    K = S(C.degree())
+    N = A.degree()
+    M = B.degree()
+    K = C.degree()
 
     if (N != M) or (A.LC() != B.LC()):
-        D = {K - max(N, M)}
+        d = K - max(N, M)
     elif not N:
-        D = {K - N + 1, S.Zero}
+        d = K + 1
     else:
-        D = {K - N + 1, (B.nth(N - 1) - A.nth(N - 1))/A.LC()}
+        d1 = K - N + 1
+        d2 = (B.nth(N - 1) - A.nth(N - 1))/A.LC()
+        if not d2.is_Integer:
+            # could be symbolic or Rational
+            d2 = -1 # invalid degree candidate
+        d = max(d1, d2)
 
-    for d in set(D):
-        if not d.is_Integer or d < 0:
-            D.remove(d)
-
-    if not D:
+    if d < 0:
         return None    # 'f(n)' is *not* Gosper-summable
-
-    d = max(D)
 
     coeffs = symbols('c:%s' % (d + 1), cls=Dummy)
     domain = A.get_domain().inject(*coeffs)

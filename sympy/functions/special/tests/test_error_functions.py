@@ -1,14 +1,16 @@
+from __future__ import annotations
 from sympy.core.function import (diff, expand, expand_func)
 from sympy.core import EulerGamma
 from sympy.core.numbers import (E, Float, I, Rational, nan, oo, pi)
 from sympy.core.singleton import S
-from sympy.core.symbol import (Symbol, symbols)
+from sympy.core.symbol import (Symbol, symbols, Dummy)
 from sympy.functions.elementary.complexes import (conjugate, im, polar_lift, re)
 from sympy.functions.elementary.exponential import (exp, exp_polar, log)
 from sympy.functions.elementary.hyperbolic import (cosh, sinh)
 from sympy.functions.elementary.miscellaneous import sqrt
-from sympy.functions.elementary.trigonometric import (cos, sin, sinc)
-from sympy.functions.special.error_functions import (Chi, Ci, E1, Ei, Li, Shi, Si, erf, erf2, erf2inv, erfc, erfcinv, erfi, erfinv, expint, fresnelc, fresnels, li)
+from sympy.functions.elementary.trigonometric import (cos, sin, sinc, atan)
+from sympy.functions.combinatorial.factorials import factorial
+from sympy.functions.special.error_functions import (Chi, Ci, E1, Ei, Li, Shi, Si, erf, erf2, erf2inv, erfc, erfcinv, erfi, erfinv, expint, fresnelc, fresnels, li, owens_t)
 from sympy.functions.special.gamma_functions import (gamma, uppergamma)
 from sympy.functions.special.hyper import (hyper, meijerg)
 from sympy.integrals.integrals import (Integral, integrate)
@@ -21,8 +23,10 @@ from sympy.functions.special.error_functions import _erfs, _eis
 from sympy.testing.pytest import raises
 
 x, y, z = symbols('x,y,z')
+h, a = symbols('h,a')
 w = Symbol("w", real=True)
 n = Symbol("n", integer=True)
+t = Dummy('t')
 
 
 def test_erf():
@@ -46,6 +50,19 @@ def test_erf():
     assert erf(erf2inv(0, x, evaluate=False)) == x # To cover code in erf
     assert erf(erf2inv(0, erf(erfcinv(1 - erf(erfinv(x)))))) == x
 
+    alpha = symbols('alpha', extended_real=True)
+    assert erf(alpha).is_real is True
+    assert erf(alpha).is_finite is True
+    alpha = symbols('alpha', extended_real=False)
+    assert erf(alpha).is_real is None
+    assert erf(alpha).is_finite is None
+    assert erf(alpha).is_zero is None
+    assert erf(alpha).is_positive is None
+    assert erf(alpha).is_negative is None
+    alpha = symbols('alpha', extended_positive=True)
+    assert erf(alpha).is_positive is True
+    alpha = symbols('alpha', extended_negative=True)
+    assert erf(alpha).is_negative is True
     assert erf(I).is_real is False
     assert erf(0, evaluate=False).is_real
     assert erf(0, evaluate=False).is_zero
@@ -136,6 +153,10 @@ def test_erfc():
     assert erfc(-x) == S(2) - erfc(x)
     assert erfc(erfcinv(x)) == x
 
+    alpha = symbols('alpha', extended_real=True)
+    assert erfc(alpha).is_real is True
+    alpha = symbols('alpha', extended_real=False)
+    assert erfc(alpha).is_real is None
     assert erfc(I).is_real is False
     assert erfc(0, evaluate=False).is_real
     assert erfc(0, evaluate=False).is_zero is False
@@ -226,7 +247,10 @@ def test_erfi():
     assert erfi(z).rewrite('meijerg') == z*meijerg([S.Half], [], [0], [Rational(-1, 2)], -z**2)/sqrt(pi)
     assert erfi(z).rewrite('uppergamma') == (sqrt(-z**2)/z*(uppergamma(S.Half,
         -z**2)/sqrt(S.Pi) - S.One))
-    assert erfi(z).rewrite('expint') == sqrt(-z**2)/z - z*expint(S.Half, -z**2)/sqrt(S.Pi)
+    assert erfi(z).rewrite('expint') == -sqrt(-z**2)/z - z*expint(S.Half, -z**2)/sqrt(S.Pi)
+    for zval in (Rational(3, 4), 2, -2, I, -2*I, 1 + I, -1 + I, -2 - I):
+        r = erfi(z).rewrite(expint).subs(z, zval)
+        assert abs(r.evalf(15) - erfi(zval).evalf(15)) < 1e-13
     assert erfi(z).rewrite('tractable') == -I*(-_erfs(I*z)*exp(z**2) + 1)
     assert expand_func(erfi(I*z)) == I*erf(z)
 
@@ -325,6 +349,8 @@ def test_erfinv_evalf():
 def test_erfcinv():
     assert erfcinv(1) is S.Zero
     assert erfcinv(0) is S.Infinity
+    assert erfcinv(0, evaluate=False).is_infinite is True
+    assert erfcinv(2, evaluate=False).is_infinite is True
     assert erfcinv(nan) is S.NaN
 
     assert erfcinv(x).diff() == -sqrt(pi)*exp(erfcinv(x)**2)/2
@@ -332,6 +358,9 @@ def test_erfcinv():
 
     assert erfcinv(z).rewrite('erfinv') == erfinv(1-z)
     assert erfcinv(z).inverse() == erfc
+
+    # issue sympy/sympy#24684
+    assert abs( erfcinv(Float(0.4)) - 0.59511608144999484) < 1E-13
 
 
 def test_erf2inv():
@@ -417,6 +446,10 @@ def test_ei():
     assert Ei(x).series(x, 1, 3) == Ei(1) + E*(x - 1) + O((x - 1)**3, (x, 1))
     assert Ei(x).series(x, oo) == \
         (120/x**5 + 24/x**4 + 6/x**3 + 2/x**2 + 1/x + 1 + O(x**(-6), (x, oo)))*exp(x)/x
+    assert Ei(x).series(x, -oo) == \
+        (120/x**5 + 24/x**4 + 6/x**3 + 2/x**2 + 1/x + 1 + O(x**(-6), (x, -oo)))*exp(x)/x
+    assert Ei(-x).series(x, oo) == \
+        -((-120/x**5 + 24/x**4 - 6/x**3 + 2/x**2 - 1/x + 1 + O(x**(-6), (x, oo)))*exp(-x)/x)
 
     assert str(Ei(cos(2)).evalf(n=10)) == '-0.6760647401'
     raises(ArgumentIndexError, lambda: Ei(x).fdiff(2))
@@ -548,10 +581,17 @@ def test_li():
                                  log(log(z))/2 + Ci(I*log(z)) + Shi(log(z)))
     assert li(z).rewrite(Ci) == (-log(I*log(z)) - log(1/log(z))/2 +
                                  log(log(z))/2 + Ci(I*log(z)) + Shi(log(z)))
-    assert li(z).rewrite(Shi) == (-log(1/log(z))/2 + log(log(z))/2 +
-                                  Chi(log(z)) - Shi(log(z)))
-    assert li(z).rewrite(Chi) == (-log(1/log(z))/2 + log(log(z))/2 +
-                                  Chi(log(z)) - Shi(log(z)))
+    assert li(z).rewrite(Shi) == (-log(1/log(z))/2 - log(log(z))/2 +
+                                  Chi(log(z)) + Shi(log(z)))
+    assert li(z).rewrite(Chi) == (-log(1/log(z))/2 - log(log(z))/2 +
+                                  Chi(log(z)) + Shi(log(z)))
+    # the rewrites must agree with li numerically for 0 < z < 1, z > 1
+    # and complex z in all quadrants
+    for zval in (Rational(1, 4), Rational(9, 8), 3, -2, 2*I, -2*I,
+                 1 + 2*I, -1 + I, -2 - 3*I):
+        for target in (Si, Ci, Shi, Chi):
+            r = li(z).rewrite(target).subs(z, zval)
+            assert abs(r.evalf(15) - li(zval).evalf(15)) < 1e-13
     assert li(z).rewrite(hyper) ==(log(z)*hyper((1, 1), (2, 2), log(z)) -
                                    log(1/log(z))/2 + log(log(z))/2 + EulerGamma)
     assert li(z).rewrite(meijerg) == (-log(1/log(z))/2 - log(-log(z)) + log(log(z))/2 -
@@ -576,6 +616,12 @@ def test_Li():
     assert Li(z).series(z) == \
         log(z)**5/600 + log(z)**4/96 + log(z)**3/18 + log(z)**2/4 + log(z) + log(log(z)) - li(2) + EulerGamma
     raises(ArgumentIndexError, lambda: Li(z).fdiff(2))
+
+
+def test_Li_evalf_cancellation():
+    result = Li(2 + Rational(1, 10**20)).evalf()
+    expected = Float('1.442695040888963407354721258549378e-20', 50)
+    assert abs(result - expected) < 1e-34
 
 
 def test_si():
@@ -612,20 +658,26 @@ def test_si():
     assert tn_arg(Si)
     assert tn_arg(Shi)
 
+    assert Si(x)._eval_as_leading_term(x, None, 1) == x
+    assert Si(2*x)._eval_as_leading_term(x, None, 1) == 2*x
+    assert Si(sin(x))._eval_as_leading_term(x, None, 1) == x
+    assert Si(x + 1)._eval_as_leading_term(x, None, 1) == Si(1)
+    assert Si(1/x)._eval_as_leading_term(x, None, 1) == \
+        Si(1/x)._eval_as_leading_term(x, None, -1) == Si(1/x)
+
     assert Si(x).nseries(x, n=8) == \
-        x - x**3/18 + x**5/600 - x**7/35280 + O(x**9)
+        x - x**3/18 + x**5/600 - x**7/35280 + O(x**8)
     assert Shi(x).nseries(x, n=8) == \
-        x + x**3/18 + x**5/600 + x**7/35280 + O(x**9)
-    assert Si(sin(x)).nseries(x, n=5) == x - 2*x**3/9 + 17*x**5/450 + O(x**6)
+        x + x**3/18 + x**5/600 + x**7/35280 + O(x**8)
+    assert Si(sin(x)).nseries(x, n=5) == x - 2*x**3/9 + O(x**5)
     assert Si(x).nseries(x, 1, n=3) == \
         Si(1) + (x - 1)*sin(1) + (x - 1)**2*(-sin(1)/2 + cos(1)/2) + O((x - 1)**3, (x, 1))
 
-    assert Si(x).series(x, oo) == pi/2 - (- 6/x**3 + 1/x \
-        + O(x**(-7), (x, oo)))*sin(x)/x - (24/x**4 - 2/x**2 + 1 \
-        + O(x**(-7), (x, oo)))*cos(x)/x
+    assert Si(x).series(x, oo) == -sin(x)*(-6/x**4 + x**(-2) + O(x**(-6), (x, oo))) - \
+        cos(x)*(24/x**5 - 2/x**3 + 1/x + O(x**(-6), (x, oo))) + pi/2
 
     t = Symbol('t', Dummy=True)
-    assert Si(x).rewrite(sinc) == Integral(sinc(t), (t, 0, x))
+    assert Si(x).rewrite(sinc).dummy_eq(Integral(sinc(t), (t, 0, x)))
 
     assert limit(Shi(x), x, S.Infinity) == S.Infinity
     assert limit(Shi(x), x, S.NegativeInfinity) == S.NegativeInfinity
@@ -667,13 +719,16 @@ def test_ci():
     assert tn_arg(Chi)
 
     assert Ci(x).nseries(x, n=4) == \
-        EulerGamma + log(x) - x**2/4 + x**4/96 + O(x**5)
+        EulerGamma + log(x) - x**2/4 + O(x**4)
     assert Chi(x).nseries(x, n=4) == \
-        EulerGamma + log(x) + x**2/4 + x**4/96 + O(x**5)
+        EulerGamma + log(x) + x**2/4 + O(x**4)
 
-    assert Ci(x).series(x, oo) == -cos(x)*(-6/x**3 + 1/x \
-        + O(x**(-7), (x, oo)))/x + (24/x**4 - 2/x**2 + 1 \
-        + O(x**(-7), (x, oo)))*sin(x)/x
+    assert Ci(x).series(x, oo) == -cos(x)*(-6/x**4 + x**(-2) + O(x**(-6), (x, oo))) + \
+        sin(x)*(24/x**5 - 2/x**3 + 1/x + O(x**(-6), (x, oo)))
+
+    assert Ci(x).series(x, -oo) == -cos(x)*(-6/x**4 + x**(-2) + O(x**(-6), (x, -oo))) + \
+        sin(x)*(24/x**5 - 2/x**3 + 1/x + O(x**(-6), (x, -oo))) + I*pi
+
     assert limit(log(x) - Ci(2*x), x, 0) == -log(2) - EulerGamma
     assert Ci(x).rewrite(uppergamma) == -expint(1, x*exp_polar(-I*pi/2))/2 -\
                                         expint(1, x*exp_polar(I*pi/2))/2
@@ -814,3 +869,261 @@ def test_fresnel_series():
     assert (fresnelc(1/z).series(z) - fc.subs(z, 1/z)).expand().is_Order
     assert ((2*fresnels(3*z)).series(z, oo) - 2*fs.subs(z, 3*z)).expand().is_Order
     assert ((3*fresnelc(2*z)).series(z, oo) - 3*fc.subs(z, 2*z)).expand().is_Order
+
+
+def test_integral_rewrites(): #issues 26134, 26144, 26306
+    assert expint(n, x).rewrite(Integral).dummy_eq(Integral(t**-n * exp(-t*x), (t, 1, oo)))
+    assert Si(x).rewrite(Integral).dummy_eq(Integral(sinc(t), (t, 0, x)))
+    assert Ci(x).rewrite(Integral).dummy_eq(log(x) - Integral((1 - cos(t))/t, (t, 0, x)) + EulerGamma)
+    assert fresnels(x).rewrite(Integral).dummy_eq(Integral(sin(pi*t**2/2), (t, 0, x)))
+    assert fresnelc(x).rewrite(Integral).dummy_eq(Integral(cos(pi*t**2/2), (t, 0, x)))
+    assert Ei(x).rewrite(Integral).dummy_eq(Integral(exp(t)/t, (t, -oo, x)))
+    assert fresnels(x).diff(x) == fresnels(x).rewrite(Integral).diff(x)
+    assert fresnelc(x).diff(x) == fresnelc(x).rewrite(Integral).diff(x)
+
+
+def test_owent_eval_basic():
+    # T(h, 0) = 0
+    assert owens_t(h, 0) is S.Zero
+    assert owens_t(1, 0) is S.Zero
+
+    # T(0, a) = atan(a)/(2*pi)
+    assert owens_t(0, a) == atan(a) / (2 * pi)
+    assert owens_t(0, 1) == Rational(1, 8)
+
+    # NaN propagation
+    assert owens_t(nan, a) is S.NaN
+    assert owens_t(h, nan) is S.NaN
+    assert owens_t(nan, nan) is S.NaN
+
+
+def test_owent_eval_infinite_a():
+    assert owens_t(h, oo) == erfc(sqrt(h**2) / sqrt(2)) / 4
+    assert owens_t(h, -oo) == -erfc(sqrt(h**2) / sqrt(2)) / 4
+
+
+def test_owent_eval_unit_a():
+    assert owens_t(h, 1) == erfc(-h / sqrt(2)) * erfc(h / sqrt(2)) / 8
+    assert owens_t(h, -1) == -erfc(-h / sqrt(2)) * erfc(h / sqrt(2)) / 8
+
+
+def test_owent_symmetry():
+    # Even in h: T(-h, a) == T(h, a)
+    assert owens_t(-h, a) == owens_t(h, a)
+    assert owens_t(-x, y) == owens_t(x, y)
+
+    # Odd in a: T(h, -a) == -T(h, a)
+    assert owens_t(h, -a) == -owens_t(h, a)
+    assert owens_t(x, -y) == -owens_t(x, y)
+
+    # Both flipped simultaneously
+    assert owens_t(-x, -y) == -owens_t(x, y)
+
+
+def test_owent_fdiff():
+    assert owens_t(h, a).fdiff(1) == \
+        -exp(-h**2 / 2) * erf(a * h / sqrt(2)) / (2 * sqrt(2 * pi))
+    assert owens_t(h, a).fdiff(2) == \
+        exp(-h**2 * (1 + a**2) / 2) / (2 * pi * (1 + a**2))
+    raises(ArgumentIndexError, lambda: owens_t(h, a).fdiff(3))
+
+
+def test_owent_diff():
+    from sympy.core.function import diff
+    assert diff(owens_t(h, a), h) == \
+        -erf(sqrt(2) * a * h / 2) * exp(-h**2 / 2) / (2 * sqrt(2 * pi))
+    assert diff(owens_t(h, a), a) == \
+        exp(-h**2 * (a**2 + 1) / 2) / (2 * pi * (a**2 + 1))
+
+
+def test_owent_is_extended_real():
+    hr, ar = symbols('hr ar', extended_real=True)
+    assert owens_t(hr, ar).is_extended_real is True
+
+    # T(h, a) depends on h only through h**2, so a non-real h does not
+    # rule out a real result: T(I, 1) ~= 0.23863 is real
+    hc = symbols('hc', extended_real=False)
+    assert owens_t(hc, ar).is_extended_real is None
+
+    # a's realness genuinely matters, but unknown realness of h can only
+    # ever fail to confirm, never deny
+    assert owens_t(hr, hc).is_extended_real is None
+
+    # When h's realness is unknown, the result is genuinely undetermined
+    hu = symbols('hu')
+    assert owens_t(hu, ar).is_extended_real is None
+
+
+def test_owent_sign_and_finite():
+    # T(h, a) is strictly positive/negative when h is real (hence
+    # finite) and a is a positive/negative real -- the integrand is
+    # always strictly positive for real h, so the sign of the integral
+    # from 0 to a matches the sign of a.
+    hr = symbols('hr', real=True)
+    ap = symbols('ap', real=True, positive=True)
+    an = symbols('an', real=True, negative=True)
+    assert owens_t(hr, ap).is_positive is True
+    assert owens_t(hr, ap).is_negative is False
+    assert owens_t(hr, an).is_negative is True
+    assert owens_t(hr, an).is_positive is False
+
+    # unknown realness of h: can't conclude a sign
+    assert owens_t(h, ap).is_positive is None
+    assert owens_t(h, an).is_negative is None
+
+    # unknown sign of a: can't conclude a sign either
+    assert owens_t(hr, a).is_positive is None
+
+    # |T(h, a)| <= 1/4 always, so T is finite whenever h and a are
+    # extended real, even at the +-oo endpoints
+    ar = symbols('ar', extended_real=True)
+    assert owens_t(hr, ap).is_finite is True
+    assert owens_t(oo, ar).is_finite is True
+    assert owens_t(hr, oo).is_finite is True
+    assert owens_t(h, a).is_finite is None
+
+
+def test_owent_is_zero():
+    assert owens_t(h, 0).is_zero is True
+    assert owens_t(0, 0).is_zero is True
+    assert owens_t(oo, a).is_zero is True
+    assert owens_t(-oo, a).is_zero is True
+    assert owens_t(h, a).is_zero is None
+
+    # tightened: a real and known nonzero, with h real (hence finite),
+    # means T is definitely not zero
+    hr = symbols('hr', real=True)
+    an = symbols('an', real=True, negative=True)
+    assert owens_t(hr, an).is_zero is False
+    # h's realness unknown: can't conclude
+    assert owens_t(h, an).is_zero is None
+
+
+def test_owent_conjugate():
+    assert conjugate(owens_t(h, a)) == owens_t(conjugate(h), conjugate(a))
+    assert conjugate(owens_t(w, a)) == owens_t(w, conjugate(a))
+
+
+def test_owent_rewrite():
+    from sympy.core.function import expand
+    target = erfc(-h / sqrt(2)) * erfc(h / sqrt(2)) / 8
+    # Put both sides on the same (erf-only) basis before comparing, since
+    # erf(x) and erfc(x) = 1 - erf(x) expressions don't cancel to 0 under
+    # expand() unless expressed in terms of a single function.
+    assert expand(owens_t(h, 1).rewrite(erf) - target.rewrite(erf)) == 0
+    assert expand(owens_t(h, 1).rewrite(erfc) - target) == 0
+    # General a has no elementary closed form via this rewrite path
+    assert owens_t(h, a).rewrite(erf) == owens_t(h, a)
+    assert owens_t(h, a).rewrite(erfc) == owens_t(h, a)
+
+
+def test_owent_expand_func():
+    # Owen (1956) eq. 2.8, the addition/inversion formula:
+    #   T(h, a) + T(a*h, 1/a) = [Phi(h) + Phi(a*h)]/2 - Phi(h)*Phi(a*h)
+    # for a > 0, with Phi(z) = erfc(-z/sqrt(2))/2. expand_func should
+    # only apply this (as an argument-reduction step bringing |a| below
+    # 1) when a > 1 is known; otherwise it's a no-op.
+    Phi = lambda z: erfc(-z / sqrt(2)) / 2
+    target = (Phi(h) + Phi(3*h)) / 2 - Phi(h)*Phi(3*h) - owens_t(3*h, Rational(1, 3))
+    assert expand_func(owens_t(h, 3)) == target
+
+    # numerical spot check against the identity itself, independent of
+    # the exact symbolic form produced above
+    for hv, av in [(Float(0.7), S(4)), (Float(-1.3), Rational(5, 2))]:
+        lhs = owens_t(hv, av).evalf(25)
+        rhs = expand_func(owens_t(h, a)).subs({h: hv, a: av}).evalf(25)
+        assert abs(lhs - rhs) < Float('1e-20')
+
+    # a <= 1, a <= 0, or a with unknown/non-positive sign: unchanged,
+    # since the formula only reduces the argument when a > 1
+    assert expand_func(owens_t(h, Rational(1, 2))) == owens_t(h, Rational(1, 2))
+    am = symbols('am', negative=True)
+    assert expand_func(owens_t(h, am)) == owens_t(h, am)
+    assert expand_func(owens_t(h, a)) == owens_t(h, a)
+
+    # the reduction is not reapplied to the owens_t(a*h, 1/a) term it
+    # just introduced, since |1/a| < 1 fails the a > 1 guard
+    reduced = expand_func(owens_t(h, 3))
+    assert owens_t(3*h, Rational(1, 3)) in reduced.atoms(owens_t)
+
+
+def test_owent_rewrite_Sum():
+    from sympy.concrete.summations import Sum
+    k = Dummy("k")
+    target = Sum((-1)**k * a**(2*k + 1) * uppergamma(k + 1, h**2/2) /
+                 ((2*k + 1) * factorial(k)), (k, 0, oo)) / (2*pi)
+    assert owens_t(h, a).rewrite(Sum).dummy_eq(target)
+
+    # numerically check a truncated partial sum against the defining
+    # integral, for a couple of (h, a) with |a| <= 1 (the series'
+    # radius of convergence, since T(h, a) has branch points at a = +-I)
+    for hv, av, ref in [
+        (Float(1), Rational(1, 2), 0.0430646911207854),
+        (Rational(3, 10), Float(-0.7), -0.0923156057304274),
+    ]:
+        summand = list(owens_t(h, a).rewrite(Sum).atoms(Sum))[0]
+        idx = summand.limits[0][0]
+        partial = Sum(summand.function, (idx, 0, 40)).doit()
+        approx = (partial / (2*pi)).subs({h: hv, a: av})
+        assert abs(approx.evalf() - ref) < Float('1e-10')
+
+
+def test_owent_series():
+    # Taylor series in h around h = 0 already work automatically via
+    # fdiff; check a couple of orders explicitly.
+    assert owens_t(h, a).series(h, 0, 3) == \
+        atan(a)/(2*pi) - a*h**2/(4*pi) + O(h**3)
+
+    # As h -> +-oo (a fixed, positive), T(h, a) approaches
+    # T(h, oo) = erfc(h/sqrt(2))/4 to all algebraic orders in 1/h --
+    # truncating the defining integral at a finite a only changes it
+    # by an amount beyond all these orders.
+    hp = symbols('hp', positive=True)
+    ap = symbols('ap', positive=True)
+    am = symbols('am', negative=True)
+    assert (owens_t(hp, ap).series(hp, oo, 4) -
+            erfc(hp/sqrt(2)).series(hp, oo, 4)/4).removeO() == 0
+    assert (owens_t(hp, am).series(hp, oo, 4) +
+            erfc(hp/sqrt(2)).series(hp, oo, 4)/4).removeO() == 0
+
+    # unknown sign of a: the leading behavior still carries sign(a)
+    hu = symbols('hu', positive=True)
+    s = owens_t(hu, a).series(hu, oo, 2)
+    assert s.subs(a, 0) == 0
+    assert s.subs(a, 3) == erfc(hu/sqrt(2)).series(hu, oo, 2)/4
+
+
+def test_owent_evalf():
+    # T(0, 1) = atan(1)/(2*pi) = 1/8
+    assert abs(owens_t(0, 1).evalf() - Rational(1, 8)) < 1E-10
+
+    # Known reference value: T(1, 1) ~ 0.0667418821657010
+    assert abs(owens_t(1, 1).evalf() - 0.0667418821657010) < 1E-10
+
+    # Generic (h, a) not hitting any special-cased eval() branch, so this
+    # exercises the numerical quadrature path in _eval_evalf directly.
+    # Reference computed independently via mpmath.quad on the defining
+    # integral: T(1, 1/2) ~ 0.0430646911207854
+    assert abs(owens_t(1, S.Half).evalf() - 0.0430646911207854) < 1E-10
+    # T(0.3, 2) ~ 0.162604305932772
+    assert abs(owens_t(Rational(3, 10), 2).evalf() - 0.162604305932772) < 1E-10
+
+    # a -> oo special-cased evalf path
+    assert abs(owens_t(1, oo).evalf() - (erfc(1 / sqrt(2)) / 4).evalf()) < 1E-10
+
+    # Symmetry should hold numerically too
+    assert abs(owens_t(-1, 2).evalf() - owens_t(1, 2).evalf()) < 1E-10
+    assert abs(owens_t(1, -2).evalf() + owens_t(1, 2).evalf()) < 1E-10
+
+
+def test_owent_evalf_cancellation():
+    h, a = -6, 2
+    expr = erf(sqrt(2)*h/2)/2 + S.Half - 2*owens_t(h, a)
+
+    # The default precision must be propagated into the numerical integral so
+    # that Add can recover the cancellation in this left-tail probability.
+    result = expr.evalf()
+    # Independent 100-digit mpmath quadrature gives this reference value.
+    expected = Float('7.1180791906932412294852794865326e-43', 50)
+    assert result.is_Float
+    assert abs(result - expected) < 1e-55

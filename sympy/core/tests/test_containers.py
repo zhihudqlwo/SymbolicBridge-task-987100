@@ -1,10 +1,11 @@
+from __future__ import annotations
 from collections import defaultdict
 
 from sympy.core.basic import Basic
 from sympy.core.containers import (Dict, Tuple)
 from sympy.core.numbers import Integer
 from sympy.core.kind import NumberKind
-from sympy.matrices.common import MatrixKind
+from sympy.matrices.kind import MatrixKind
 from sympy.core.singleton import S
 from sympy.core.symbol import symbols
 from sympy.core.sympify import sympify
@@ -213,5 +214,6 @@ def test_issue_5788():
         if o != Tuple:
             assert o(*args) == o(*reversed(args))
         pair = [o(*args), o(*reversed(args))]
-        assert sorted(pair) == sorted(pair)
+        pair_rev = pair[::-1]
+        assert sorted(pair) == sorted(pair_rev)
         assert set(o(*args))  # doesn't fail

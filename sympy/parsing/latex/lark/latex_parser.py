@@ -1,8 +1,11 @@
+from __future__ import annotations
 import os
 import logging
 import re
+from pathlib import Path
 
 from sympy.external import import_module
+from sympy.parsing.latex.errors import LaTeXParsingError
 from sympy.parsing.latex.lark.transformer import TransformToSymPyExpr
 
 _lark = import_module("lark")
@@ -43,11 +46,9 @@ class LarkLaTeXParser:
         grammar_dir_path = os.path.join(os.path.dirname(__file__), "grammar/")
 
         if grammar_file is None:
-            with open(os.path.join(grammar_dir_path, "latex.lark"), encoding="utf-8") as f:
-                latex_grammar = f.read()
+            latex_grammar = Path(os.path.join(grammar_dir_path, "latex.lark")).read_text(encoding="utf-8")
         else:
-            with open(grammar_file, encoding="utf-8") as f:
-                latex_grammar = f.read()
+            latex_grammar = Path(grammar_file).read_text(encoding="utf-8")
 
         self.parser = _lark.Lark(
             latex_grammar,
@@ -56,10 +57,15 @@ class LarkLaTeXParser:
             start="latex_string",
             lexer="auto",
             ambiguity="explicit",
-            debug=True,
             propagate_positions=False,
             maybe_placeholders=False,
             keep_all_tokens=True)
+
+        # The control words defined in the grammar, e.g. "frac" for "\\frac", so that
+        # an unknown one is not split into a known command followed by symbols.
+        self.control_words = {word for _, (tree, _) in self.parser.grammar.term_defs
+                              for token in tree.scan_values(lambda v: isinstance(v, _lark.Token))
+                              for word in re.findall(r"\\\\([a-zA-Z]+)", token)}
 
         self.print_debug_output = print_debug_output
         self.transform_expr = transform
@@ -73,25 +79,29 @@ class LarkLaTeXParser:
         if self.print_debug_output:
             _lark.logger.setLevel(logging.DEBUG)
 
+        for match in re.finditer(r"\\(?:\\|([a-zA-Z]+)|.)", s):
+            if match.group(1) and match.group(1) not in self.control_words:
+                raise LaTeXParsingError("Unknown command %s" % match.group(0))
+
         parse_tree = self.parser.parse(s)
 
         if not self.transform_expr:
             # exit early and return the parse tree
-            _lark.logger.debug("expression =", s)
+            _lark.logger.debug("expression = %s", s)
             _lark.logger.debug(parse_tree)
             _lark.logger.debug(parse_tree.pretty())
             return parse_tree
 
         if self.print_debug_output:
             # print this stuff before attempting to run the transformer
-            _lark.logger.debug("expression =", s)
+            _lark.logger.debug("expression = %s", s)
             # print the `parse_tree` variable
             _lark.logger.debug(parse_tree.pretty())
 
         sympy_expression = self.transformer.transform(parse_tree)
 
         if self.print_debug_output:
-            _lark.logger.debug("SymPy expression =", sympy_expression)
+            _lark.logger.debug("SymPy expression = %s", sympy_expression)
 
         return sympy_expression
 

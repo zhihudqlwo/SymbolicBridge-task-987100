@@ -1,4 +1,5 @@
 """Prime ideals in number fields. """
+from __future__ import annotations
 
 from sympy.polys.polytools import Poly
 from sympy.polys.domains.finitefield import FF
@@ -662,7 +663,7 @@ def _prime_decomp_maximal_ideal(I, p, ZK):
 def _prime_decomp_split_ideal(I, p, N, G, ZK):
     r"""
     Perform the step in the prime decomposition algorithm where we have determined
-    the the quotient ``ZK/I`` is _not_ a field, and we want to perform a non-trivial
+    the quotient ``ZK/I`` is _not_ a field, and we want to perform a non-trivial
     factorization of *I* by locating an idempotent element of ``ZK/I``.
     """
     assert I.parent == ZK and G.parent is ZK and N.parent is G

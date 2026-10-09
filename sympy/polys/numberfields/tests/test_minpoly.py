@@ -1,4 +1,5 @@
 """Tests for minimal polynomials. """
+from __future__ import annotations
 
 from sympy.core.function import expand
 from sympy.core import (GoldenRatio, TribonacciConstant)
@@ -8,6 +9,7 @@ from sympy.core.singleton import S
 from sympy.functions.elementary.exponential import exp
 from sympy.functions.elementary.miscellaneous import (cbrt, sqrt)
 from sympy.functions.elementary.trigonometric import (cos, sin, tan)
+from sympy.ntheory.generate import nextprime
 from sympy.polys.polytools import Poly
 from sympy.polys.rootoftools import CRootOf
 from sympy.solvers.solveset import nonlinsolve
@@ -176,6 +178,21 @@ def test_minimal_polynomial():
     assert minimal_polynomial(phi, x) == x**2 - x - 1
 
 
+def test_issue_26903():
+    p1 = nextprime(10**16)  # greater than 10**15
+    p2 = nextprime(p1)
+    assert sqrt(p1**2*p2).is_Pow  # square not extracted
+    zero = sqrt(p1**2*p2) - p1*sqrt(p2)
+    assert minimal_polynomial(zero, x) == x
+    assert minimal_polynomial(sqrt(2) - zero, x) == x**2 - 2
+
+
+def test_issue_8353():
+    assert minimal_polynomial(exp(3*I*pi, evaluate=False), x) == x + 1
+    assert minimal_polynomial(Pow(8, S(1)/3, evaluate=False), x
+        ) == x - 2
+
+
 def test_minimal_polynomial_issue_19732():
     # https://github.com/sympy/sympy/issues/19732
     expr = (-280898097948878450887044002323982963174671632174995451265117559518123750720061943079105185551006003416773064305074191140286225850817291393988597615/(-488144716373031204149459129212782509078221364279079444636386844223983756114492222145074506571622290776245390771587888364089507840000000*sqrt(238368341569)*sqrt(S(11918417078450)/63568729
@@ -320,6 +337,7 @@ def test_minpoly_issue_7113():
     2734577732179183863586489182929671773182898498218854181690460140337930774573792597743853652058046464
 
 
+@slow
 def test_minpoly_issue_23677():
     r1 = CRootOf(4000000*x**3 - 239960000*x**2 + 4782399900*x - 31663998001, 0)
     r2 = CRootOf(4000000*x**3 - 239960000*x**2 + 4782399900*x - 31663998001, 1)

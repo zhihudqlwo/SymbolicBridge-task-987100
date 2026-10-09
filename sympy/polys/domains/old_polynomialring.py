@@ -1,8 +1,8 @@
 """Implementation of :class:`PolynomialRing` class. """
+from __future__ import annotations
 
 
 from sympy.polys.agca.modules import FreeModulePolyRing
-from sympy.polys.domains.characteristiczero import CharacteristicZero
 from sympy.polys.domains.compositedomain import CompositeDomain
 from sympy.polys.domains.old_fractionfield import FractionField
 from sympy.polys.domains.ring import Ring
@@ -14,10 +14,9 @@ from sympy.polys.polyutils import dict_from_basic, basic_from_dict, _dict_reorde
 from sympy.utilities import public
 from sympy.utilities.iterables import iterable
 
-# XXX why does this derive from CharacteristicZero???
 
 @public
-class PolynomialRingBase(Ring, CharacteristicZero, CompositeDomain):
+class PolynomialRingBase(Ring, CompositeDomain):
     """
     Base class for generalized polynomial rings.
 
@@ -47,7 +46,11 @@ class PolynomialRingBase(Ring, CharacteristicZero, CompositeDomain):
         # NOTE 'order' may not be set if inject was called through CompositeDomain
         self.order = opts.get('order', monomial_key(self.default_order))
 
-    def new(self, element):
+    def set_domain(self, dom, /):
+        """Return a new polynomial ring with given domain. """
+        return self.__class__(dom, *self.gens, order=self.order)
+
+    def new(self, element, /):
         return self.dtype(element, self.dom, len(self.gens) - 1)
 
     def _ground_new(self, element):
@@ -71,13 +74,6 @@ class PolynomialRingBase(Ring, CharacteristicZero, CompositeDomain):
         return isinstance(other, PolynomialRingBase) and \
             self.dtype == other.dtype and self.dom == other.dom and \
             self.gens == other.gens and self.order == other.order
-
-    @property
-    def has_CharacteristicZero(self):
-        return self.dom.has_CharacteristicZero
-
-    def characteristic(self):
-        return self.dom.characteristic()
 
     def from_ZZ(K1, a, K0):
         """Convert a Python ``int`` object to ``dtype``. """

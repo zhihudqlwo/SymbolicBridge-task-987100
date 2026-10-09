@@ -1,3 +1,4 @@
+from __future__ import annotations
 __all__ = [
     'vector',
 
@@ -28,19 +29,19 @@ __all__ = [
 
     'Body',
 
-    'SymbolicSystem',
+    'SymbolicSystem', 'System',
 
     'PinJoint', 'PrismaticJoint', 'CylindricalJoint', 'PlanarJoint',
     'SphericalJoint', 'WeldJoint',
 
     'JointsMethod',
 
-    'WrappingCylinder', 'WrappingGeometryBase', 'WrappingSphere',
+    'WrappingCylinder', 'WrappingGeometryBase', 'WrappingSphere', 'WrappingCone',
 
     'PathwayBase', 'LinearPathway', 'ObstacleSetPathway', 'WrappingPathway',
 
     'ActuatorBase', 'ForceActuator', 'LinearDamper', 'LinearSpring',
-    'TorqueActuator',
+    'TorqueActuator', 'DuffingSpring', 'CoulombKineticFriction',
 ]
 
 from sympy.physics import vector
@@ -73,7 +74,7 @@ from .linearize import Linearizer
 
 from .body import Body
 
-from .system import SymbolicSystem
+from .system import SymbolicSystem, System
 
 from .jointsmethod import JointsMethod
 
@@ -81,10 +82,10 @@ from .joint import (PinJoint, PrismaticJoint, CylindricalJoint, PlanarJoint,
                     SphericalJoint, WeldJoint)
 
 from .wrapping_geometry import (WrappingCylinder, WrappingGeometryBase,
-                                WrappingSphere)
+                                WrappingSphere, WrappingCone)
 
 from .pathway import (PathwayBase, LinearPathway, ObstacleSetPathway,
                       WrappingPathway)
 
 from .actuator import (ActuatorBase, ForceActuator, LinearDamper, LinearSpring,
-                       TorqueActuator)
+                       TorqueActuator, DuffingSpring, CoulombKineticFriction)

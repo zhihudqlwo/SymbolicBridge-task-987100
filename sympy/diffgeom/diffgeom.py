@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import Any
 
 from functools import reduce
-from itertools import permutations
+from itertools import pairwise, permutations
 
 from sympy.combinatorics import Permutation
 from sympy.core import (
@@ -455,7 +455,7 @@ That is, replace {s} with Symbol({s!r}, real=True).
         path = cls._dijkstra(sys1, sys2)
 
         transforms = []
-        for s1, s2 in zip(path, path[1:]):
+        for s1, s2 in pairwise(path):
             if (s1, s2) in rel:
                 transforms.append(rel[(s1, s2)])
             else:
@@ -882,7 +882,7 @@ class Point(Basic):
         """
         Coordinates of the point in given coordinate system. If coordinate system
         is not passed, it returns the coordinates in the coordinate system in which
-        the poin was defined.
+        the point was defined.
         """
         if sys is None:
             return self._coords
@@ -1122,10 +1122,7 @@ class BaseVectorField(Expr):
 def _find_coords(expr):
     # Finds CoordinateSystems existing in expr
     fields = expr.atoms(BaseScalarField, BaseVectorField)
-    result = set()
-    for f in fields:
-        result.add(f._coord_sys)
-    return result
+    return {f._coord_sys for f in fields}
 
 
 class Commutator(Expr):

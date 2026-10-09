@@ -1,3 +1,4 @@
+from __future__ import annotations
 import re
 
 import sympy
@@ -7,7 +8,7 @@ from sympy.parsing.latex.errors import LaTeXParsingError
 lark = import_module("lark")
 
 if lark:
-    from lark import Transformer, Token  # type: ignore
+    from lark import Transformer, Token, Tree  # type: ignore
 else:
     class Transformer:  # type: ignore
         def transform(self, *args):
@@ -15,6 +16,10 @@ else:
 
 
     class Token:  # type: ignore
+        pass
+
+
+    class Tree:  # type: ignore
         pass
 
 
@@ -49,46 +54,62 @@ class TransformToSymPyExpr(Transformer):
     def CMD_INFTY(self, tokens):
         return sympy.oo
 
-    def GREEK_SYMBOL(self, tokens):
+    def GREEK_SYMBOL_WITH_PRIMES(self, tokens):
         # we omit the first character because it is a backslash. Also, if the variable name has "var" in it,
         # like "varphi" or "varepsilon", we remove that too
         variable_name = re.sub("var", "", tokens[1:])
 
         return sympy.Symbol(variable_name)
 
-    def BASIC_SUBSCRIPTED_SYMBOL(self, tokens):
-        symbol, sub = tokens.value.split("_")
+    def LATIN_SYMBOL_WITH_LATIN_SUBSCRIPT(self, tokens):
+        base, sub = tokens.value.split("_")
         if sub.startswith("{"):
-            return sympy.Symbol("%s_{%s}" % (symbol, sub[1:-1]))
+            return sympy.Symbol("%s_{%s}" % (base, sub[1:-1]))
         else:
-            return sympy.Symbol("%s_{%s}" % (symbol, sub))
+            return sympy.Symbol("%s_{%s}" % (base, sub))
 
-    def GREEK_SUBSCRIPTED_SYMBOL(self, tokens):
-        greek_letter, sub = tokens.value.split("_")
-        greek_letter = re.sub("var", "", greek_letter[1:])
+    def GREEK_SYMBOL_WITH_LATIN_SUBSCRIPT(self, tokens):
+        base, sub = tokens.value.split("_")
+        greek_letter = re.sub("var", "", base[1:])
 
         if sub.startswith("{"):
             return sympy.Symbol("%s_{%s}" % (greek_letter, sub[1:-1]))
         else:
             return sympy.Symbol("%s_{%s}" % (greek_letter, sub))
 
-    def SYMBOL_WITH_GREEK_SUBSCRIPT(self, tokens):
-        symbol, sub = tokens.value.split("_")
+    def LATIN_SYMBOL_WITH_GREEK_SUBSCRIPT(self, tokens):
+        base, sub = tokens.value.split("_")
         if sub.startswith("{"):
             greek_letter = sub[2:-1]
-            greek_letter = re.sub("var", "", greek_letter)
-
-            return sympy.Symbol("%s_{%s}" % (symbol, greek_letter))
         else:
             greek_letter = sub[1:]
-            greek_letter = re.sub("var", "", greek_letter)
 
-            return sympy.Symbol("%s_{%s}" % (symbol, greek_letter))
+        greek_letter = re.sub("var", "", greek_letter)
+        return sympy.Symbol("%s_{%s}" % (base, greek_letter))
+
+
+    def GREEK_SYMBOL_WITH_GREEK_SUBSCRIPT(self, tokens):
+        base, sub = tokens.value.split("_")
+        greek_base = re.sub("var", "", base[1:])
+
+        if sub.startswith("{"):
+            greek_sub = sub[2:-1]
+        else:
+            greek_sub = sub[1:]
+
+        greek_sub = re.sub("var", "", greek_sub)
+        return sympy.Symbol("%s_{%s}" % (greek_base, greek_sub))
 
     def multi_letter_symbol(self, tokens):
-        return sympy.Symbol(tokens[2])
+        if len(tokens) == 4: # no primes (single quotes) on symbol
+            return sympy.Symbol(tokens[2])
+        if len(tokens) == 5: # there are primes on the symbol
+            return sympy.Symbol(tokens[2] + tokens[4])
 
     def number(self, tokens):
+        if tokens[0].type == "CMD_IMAGINARY_UNIT":
+            return sympy.I
+
         if "." in tokens[0]:
             return sympy.core.numbers.Float(tokens[0])
         else:
@@ -104,6 +125,9 @@ class TransformToSymPyExpr(Transformer):
         return tokens[1]
 
     def group_curly_parentheses(self, tokens):
+        return tokens[1]
+
+    def group_curly_literal_parentheses(self, tokens):
         return tokens[1]
 
     def eq(self, tokens):
@@ -125,19 +149,45 @@ class TransformToSymPyExpr(Transformer):
         return sympy.Ge(tokens[0], tokens[2])
 
     def add(self, tokens):
-        return sympy.Add(tokens[0], tokens[2])
+        if len(tokens) == 2: # +a
+            return tokens[1]
+        if len(tokens) == 3: # a + b
+            lh = tokens[0]
+            rh = tokens[2]
+
+            if self._obj_is_sympy_Matrix(lh) or self._obj_is_sympy_Matrix(rh):
+                return sympy.MatAdd(lh, rh)
+
+            return sympy.Add(lh, rh)
 
     def sub(self, tokens):
-        if len(tokens) == 2:
-            return -tokens[1]
-        elif len(tokens) == 3:
-            return sympy.Add(tokens[0], -tokens[2])
+        if len(tokens) == 2: # -a
+            x = tokens[1]
+
+            if self._obj_is_sympy_Matrix(x):
+                return sympy.MatMul(-1, x)
+
+            return -x
+        if len(tokens) == 3: # a - b
+            lh = tokens[0]
+            rh = tokens[2]
+
+            if self._obj_is_sympy_Matrix(lh) or self._obj_is_sympy_Matrix(rh):
+                return sympy.MatAdd(lh, sympy.MatMul(-1, rh))
+
+            return sympy.Add(lh, -rh)
 
     def mul(self, tokens):
-        return sympy.Mul(tokens[0], tokens[2])
+        lh = tokens[0]
+        rh = tokens[2]
+
+        if self._obj_is_sympy_Matrix(lh) or self._obj_is_sympy_Matrix(rh):
+            return sympy.MatMul(lh, rh)
+
+        return sympy.Mul(lh, rh)
 
     def div(self, tokens):
-        return sympy.Mul(tokens[0], sympy.Pow(tokens[2], -1))
+        return self._handle_division(tokens[0], tokens[2])
 
     def adjacent_expressions(self, tokens):
         # Most of the time, if two expressions are next to each other, it means implicit multiplication,
@@ -156,7 +206,86 @@ class TransformToSymPyExpr(Transformer):
             return sympy.Mul(tokens[0], tokens[1])
 
     def superscript(self, tokens):
-        return sympy.Pow(tokens[0], tokens[2])
+        def isprime(x):
+            return isinstance(x, Token) and x.type == "PRIMES"
+
+        def iscmdprime(x):
+            return isinstance(x, Token) and (x.type == "PRIMES_VIA_CMD"
+                                             or x.type == "CMD_PRIME")
+
+        def isstar(x):
+            return isinstance(x, Token) and x.type == "STARS"
+
+        def iscmdstar(x):
+            return isinstance(x, Token) and (x.type == "STARS_VIA_CMD"
+                                             or x.type == "CMD_ASTERISK")
+
+        base = tokens[0]
+        if len(tokens) == 3: # a^b OR a^\prime OR a^\ast
+            sup = tokens[2]
+        elif len(tokens) == 5:
+            # a^{'}, a^{''}, ... OR
+            # a^{*}, a^{**}, ... OR
+            # a^{\prime}, a^{\prime\prime}, ... OR
+            # a^{\ast}, a^{\ast\ast}, ...
+            sup = tokens[3]
+
+        if self._obj_is_sympy_Matrix(base):
+            if sup == sympy.Symbol("T"):
+                return sympy.Transpose(base)
+            if sup == sympy.Symbol("H"):
+                return sympy.adjoint(base)
+            if isprime(sup):
+                sup = sup.value
+                if len(sup) % 2 == 0:
+                    return base
+                return sympy.Transpose(base)
+            if iscmdprime(sup):
+                sup = sup.value
+                if (len(sup)/len(r"\prime")) % 2 == 0:
+                    return base
+                return sympy.Transpose(base)
+            if isstar(sup):
+                sup = sup.value
+                # need .doit() in order to be consistent with
+                # sympy.adjoint() which returns the evaluated adjoint
+                # of a matrix
+                if len(sup) % 2 == 0:
+                    return base.doit()
+                return sympy.adjoint(base)
+            if iscmdstar(sup):
+                sup = sup.value
+                # need .doit() for same reason as above
+                if (len(sup)/len(r"\ast")) % 2 == 0:
+                    return base.doit()
+                return sympy.adjoint(base)
+
+        if isprime(sup) or iscmdprime(sup) or isstar(sup) or iscmdstar(sup):
+            raise LaTeXParsingError(f"{base} with superscript {sup} is not understood.")
+
+        return sympy.Pow(base, sup)
+
+    def degree(self, args):
+        base = args[0]
+        return base * (sympy.pi / 180)
+
+    def matrix_prime(self, tokens):
+        base = tokens[0]
+        primes = tokens[1].value
+
+        if not self._obj_is_sympy_Matrix(base):
+            raise LaTeXParsingError(f"({base}){primes} is not understood.")
+
+        if len(primes) % 2 == 0:
+            return base
+
+        return sympy.Transpose(base)
+
+    def symbol_prime(self, tokens):
+        base = tokens[0]
+        primes = tokens[1].value
+
+        return sympy.Symbol(f"{base.name}{primes}")
 
     def fraction(self, tokens):
         numerator = tokens[1]
@@ -168,7 +297,7 @@ class TransformToSymPyExpr(Transformer):
             return "derivative", variable
         else:
             denominator = tokens[2]
-            return sympy.Mul(numerator, sympy.Pow(denominator, -1))
+            return self._handle_division(numerator, denominator)
 
     def binomial(self, tokens):
         return sympy.binomial(tokens[1], tokens[2])
@@ -410,101 +539,33 @@ class TransformToSymPyExpr(Transformer):
         from sympy.physics.quantum import Bra, Ket, InnerProduct
         return InnerProduct(Bra(tokens[1]), Ket(tokens[3]))
 
-    def sin(self, tokens):
-        return sympy.sin(tokens[1])
+    _trigonometric_functions = {
+        "\\sin": sympy.sin, "\\cos": sympy.cos, "\\tan": sympy.tan,
+        "\\csc": sympy.csc, "\\sec": sympy.sec, "\\cot": sympy.cot,
+        "\\arcsin": sympy.asin, "\\arccos": sympy.acos, "\\arctan": sympy.atan,
+        "\\arccsc": sympy.acsc, "\\arcsec": sympy.asec, "\\arccot": sympy.acot,
+        "\\sinh": sympy.sinh, "\\cosh": sympy.cosh, "\\tanh": sympy.tanh,
+        "\\coth": sympy.coth, "\\sech": sympy.sech, "\\csch": sympy.csch,
+        "\\arsinh": sympy.asinh, "\\arcosh": sympy.acosh, "\\artanh": sympy.atanh,
+        "\\arcsinh": sympy.asinh, "\\arccosh": sympy.acosh, "\\arctanh": sympy.atanh,
+    }
 
-    def cos(self, tokens):
-        return sympy.cos(tokens[1])
+    _inverse_trigonometric_functions = {
+        sympy.sin: sympy.asin, sympy.cos: sympy.acos, sympy.tan: sympy.atan,
+        sympy.csc: sympy.acsc, sympy.sec: sympy.asec, sympy.cot: sympy.acot,
+        sympy.sinh: sympy.asinh, sympy.cosh: sympy.acosh, sympy.tanh: sympy.atanh,
+        sympy.coth: sympy.acoth, sympy.sech: sympy.asech, sympy.csch: sympy.acsch,
+    }
 
-    def tan(self, tokens):
-        return sympy.tan(tokens[1])
+    def trigonometric_function(self, tokens):
+        return self._trigonometric_functions[tokens[0]](tokens[1])
 
-    def csc(self, tokens):
-        return sympy.csc(tokens[1])
-
-    def sec(self, tokens):
-        return sympy.sec(tokens[1])
-
-    def cot(self, tokens):
-        return sympy.cot(tokens[1])
-
-    def sin_power(self, tokens):
+    def trigonometric_function_power(self, tokens):
+        function = self._trigonometric_functions[tokens[0]]
         exponent = tokens[2]
-        if exponent == -1:
-            return sympy.asin(tokens[-1])
-        else:
-            return sympy.Pow(sympy.sin(tokens[-1]), exponent)
-
-    def cos_power(self, tokens):
-        exponent = tokens[2]
-        if exponent == -1:
-            return sympy.acos(tokens[-1])
-        else:
-            return sympy.Pow(sympy.cos(tokens[-1]), exponent)
-
-    def tan_power(self, tokens):
-        exponent = tokens[2]
-        if exponent == -1:
-            return sympy.atan(tokens[-1])
-        else:
-            return sympy.Pow(sympy.tan(tokens[-1]), exponent)
-
-    def csc_power(self, tokens):
-        exponent = tokens[2]
-        if exponent == -1:
-            return sympy.acsc(tokens[-1])
-        else:
-            return sympy.Pow(sympy.csc(tokens[-1]), exponent)
-
-    def sec_power(self, tokens):
-        exponent = tokens[2]
-        if exponent == -1:
-            return sympy.asec(tokens[-1])
-        else:
-            return sympy.Pow(sympy.sec(tokens[-1]), exponent)
-
-    def cot_power(self, tokens):
-        exponent = tokens[2]
-        if exponent == -1:
-            return sympy.acot(tokens[-1])
-        else:
-            return sympy.Pow(sympy.cot(tokens[-1]), exponent)
-
-    def arcsin(self, tokens):
-        return sympy.asin(tokens[1])
-
-    def arccos(self, tokens):
-        return sympy.acos(tokens[1])
-
-    def arctan(self, tokens):
-        return sympy.atan(tokens[1])
-
-    def arccsc(self, tokens):
-        return sympy.acsc(tokens[1])
-
-    def arcsec(self, tokens):
-        return sympy.asec(tokens[1])
-
-    def arccot(self, tokens):
-        return sympy.acot(tokens[1])
-
-    def sinh(self, tokens):
-        return sympy.sinh(tokens[1])
-
-    def cosh(self, tokens):
-        return sympy.cosh(tokens[1])
-
-    def tanh(self, tokens):
-        return sympy.tanh(tokens[1])
-
-    def asinh(self, tokens):
-        return sympy.asinh(tokens[1])
-
-    def acosh(self, tokens):
-        return sympy.acosh(tokens[1])
-
-    def atanh(self, tokens):
-        return sympy.atanh(tokens[1])
+        if exponent == -1 and function in self._inverse_trigonometric_functions:
+            return self._inverse_trigonometric_functions[function](tokens[-1])
+        return sympy.Pow(function(tokens[-1]), exponent)
 
     def abs(self, tokens):
         return sympy.Abs(tokens[1])
@@ -555,3 +616,55 @@ class TransformToSymPyExpr(Transformer):
         differential_symbol = next((symbol for symbol in differential_symbols if symbol in s), None)
 
         return differential_symbol
+
+    def matrix(self, tokens):
+        def is_matrix_row(x):
+            return (isinstance(x, Tree) and x.data == "matrix_row")
+
+        def is_not_col_delim(y):
+            return (not isinstance(y, Token) or y.type != "MATRIX_COL_DELIM")
+
+        matrix_body = tokens[1].children
+        return sympy.Matrix([[y for y in x.children if is_not_col_delim(y)]
+                             for x in matrix_body if is_matrix_row(x)])
+
+    def determinant(self, tokens):
+        if len(tokens) == 2: # \det A
+            if not self._obj_is_sympy_Matrix(tokens[1]):
+                raise LaTeXParsingError("Cannot take determinant of non-matrix.")
+
+            return tokens[1].det()
+
+        if len(tokens) == 3: # | A |
+            return self.matrix(tokens).det()
+
+    def trace(self, tokens):
+        if not self._obj_is_sympy_Matrix(tokens[1]):
+            raise LaTeXParsingError("Cannot take trace of non-matrix.")
+
+        return sympy.Trace(tokens[1])
+
+    def adjugate(self, tokens):
+        if not self._obj_is_sympy_Matrix(tokens[1]):
+            raise LaTeXParsingError("Cannot take adjugate of non-matrix.")
+
+        # need .doit() since MatAdd does not support .adjugate() method
+        return tokens[1].doit().adjugate()
+
+    def _obj_is_sympy_Matrix(self, obj):
+        if hasattr(obj, "is_Matrix"):
+            return obj.is_Matrix
+
+        return isinstance(obj, sympy.Matrix)
+
+    def _handle_division(self, numerator, denominator):
+        if self._obj_is_sympy_Matrix(denominator):
+            raise LaTeXParsingError("Cannot divide by matrices like this since "
+                                    "it is not clear if left or right multiplication "
+                                    "by the inverse is intended. Try explicitly "
+                                    "multiplying by the inverse instead.")
+
+        if self._obj_is_sympy_Matrix(numerator):
+            return sympy.MatMul(numerator, sympy.Pow(denominator, -1))
+
+        return sympy.Mul(numerator, sympy.Pow(denominator, -1))

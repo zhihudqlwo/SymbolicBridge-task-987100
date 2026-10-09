@@ -1,3 +1,4 @@
+from __future__ import annotations
 from sympy.core.add import Add
 from sympy.core.mul import Mul
 from sympy.core.numbers import (Rational, oo, pi)
@@ -356,6 +357,7 @@ def test_ldescent():
         w, x, y = ldescent(a, b)
         assert a*x**2 + b*y**2 == w**2
     assert ldescent(-1, -1) is None
+    assert ldescent(2, 6) is None
 
 
 def test_diop_ternary_quadratic_normal():
@@ -660,10 +662,17 @@ def test_sum_of_three_squares():
               800, 801, 802, 803, 804, 805, 806]:
         a, b, c = sum_of_three_squares(i)
         assert a**2 + b**2 + c**2 == i
+        assert a >= 0
+
+    # error
+    raises(ValueError, lambda: sum_of_three_squares(-1))
 
     assert sum_of_three_squares(7) is None
     assert sum_of_three_squares((4**5)*15) is None
-    assert sum_of_three_squares(25) == (5, 0, 0)
+    # if there are two zeros, there might be a solution
+    # with only one zero, e.g. 25 => (0, 3, 4) or
+    # with no zeros, e.g. 49 => (2, 3, 6)
+    assert sum_of_three_squares(25) == (0, 0, 5)
     assert sum_of_three_squares(4) == (0, 0, 2)
 
 
@@ -674,12 +683,15 @@ def test_sum_of_four_squares():
     n = randint(1, 100000000000000)
     assert sum(i**2 for i in sum_of_four_squares(n)) == n
 
-    assert sum_of_four_squares(0) == (0, 0, 0, 0)
-    assert sum_of_four_squares(14) == (0, 1, 2, 3)
-    assert sum_of_four_squares(15) == (1, 1, 2, 3)
-    assert sum_of_four_squares(18) == (1, 2, 2, 3)
-    assert sum_of_four_squares(19) == (0, 1, 3, 3)
-    assert sum_of_four_squares(48) == (0, 4, 4, 4)
+    # error
+    raises(ValueError, lambda: sum_of_four_squares(-1))
+
+    for n in range(1000):
+        result = sum_of_four_squares(n)
+        assert len(result) == 4
+        assert all(r >= 0 for r in result)
+        assert sum(r**2 for r in result) == n
+        assert list(result) == sorted(result)
 
 
 def test_power_representation():
@@ -741,6 +753,18 @@ def test_assumptions():
     diof = diophantine(a*b + 2*a + 3*b - 6)
     assert diof == {(-15, -3), (-9, -4), (-7, -5), (-6, -6), (-5, -8), (-4, -14)}
 
+    x, y = symbols('x y', integer=True)
+    diof = diophantine(10*x**2 + 5*x*y - 3*y)
+    assert diof == {(1, -5), (-3, 5), (0, 0)}
+
+    x, y = symbols('x y', integer=True, positive=True)
+    diof = diophantine(10*x**2 + 5*x*y - 3*y)
+    assert diof == set()
+
+    x, y = symbols('x y', integer=True, negative=False)
+    diof = diophantine(10*x**2 + 5*x*y - 3*y)
+    assert diof == {(0, 0)}
+
 
 def check_solutions(eq):
     """
@@ -779,7 +803,7 @@ def test_diopcoverage():
     assert base_solution_linear(4, 8, 12, t) == ans
     assert base_solution_linear(4, 8, 12, t=None) == tuple(_.subs(t, 0) for _ in ans)
 
-    assert cornacchia(1, 1, 20) is None
+    assert cornacchia(1, 1, 20) == set()
     assert cornacchia(1, 1, 5) == {(2, 1)}
     assert cornacchia(1, 2, 17) == {(3, 2)}
 
@@ -871,6 +895,9 @@ def test_sum_of_squares_powers():
     assert ans == tru
 
     raises(ValueError, lambda: list(sum_of_squares(10, -1)))
+    assert list(sum_of_squares(1, 1)) == [(1,)]
+    assert list(sum_of_squares(1, 2)) == []
+    assert list(sum_of_squares(1, 2, True)) == [(0, 1)]
     assert list(sum_of_squares(-10, 2)) == []
     assert list(sum_of_squares(2, 3)) == []
     assert list(sum_of_squares(0, 3, True)) == [(0, 0, 0)]
@@ -1015,8 +1042,8 @@ def test_diophantine_solution_set():
     assert s3(2, 8) == {(12, -6, 1)}
     assert s3.subs({t: 5, u: -3}) == {(22, 8, 1)}
     assert s3(5, -3) == {(22, 8, 1)}
-    raises(ValueError, lambda: s3.subs(x=1))
-    raises(ValueError, lambda: s3.subs(1, 2, 3))
+    raises(TypeError, lambda: s3.subs(x=1))
+    raises(TypeError, lambda: s3.subs(1, 2, 3))
     raises(ValueError, lambda: s3.add(()))
     raises(ValueError, lambda: s3.add((1, 2, 3, 4)))
     raises(ValueError, lambda: s3.add((1, 2)))
@@ -1035,3 +1062,11 @@ def test_quadratic_parameter_passing():
     # test that parameters are passed all the way to the final solution
     assert solution == {(t, 11*t), (t, -22*t)}
     assert solution(0, 0) == {(0, 0)}
+
+def test_issue_18628():
+    eq1 = x**2 - 15*x + y**2 - 8*y
+    sol = diophantine(eq1)
+    assert sol == {(15, 0), (15, 8), (-1, 4), (0, 0), (0, 8), (16, 4)}
+    eq2 = 2*x**2 - 9*x + 4*y**2 - 8*y + 14
+    sol = diophantine(eq2)
+    assert sol == {(2, 1)}

@@ -1,7 +1,8 @@
+from __future__ import annotations
 from sympy.core.sympify import _sympify
 from sympy.core import S, Basic
 
-from sympy.matrices.common import NonSquareMatrixError
+from sympy.matrices.exceptions import NonSquareMatrixError
 from sympy.matrices.expressions.matpow import MatPow
 
 
@@ -76,14 +77,6 @@ class Inverse(MatPow):
             arg = arg.doit(**hints)
 
         return arg.inverse()
-
-    def _eval_derivative_matrix_lines(self, x):
-        arg = self.args[0]
-        lines = arg._eval_derivative_matrix_lines(x)
-        for line in lines:
-            line.first_pointer *= -self.T
-            line.second_pointer *= self
-        return lines
 
 
 from sympy.assumptions.ask import ask, Q

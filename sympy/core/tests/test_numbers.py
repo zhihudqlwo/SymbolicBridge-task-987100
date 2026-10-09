@@ -1,5 +1,9 @@
+from __future__ import annotations
 import numbers as nums
 import decimal
+
+import pytest
+
 from sympy.concrete.summations import Sum
 from sympy.core import (EulerGamma, Catalan, TribonacciConstant,
     GoldenRatio)
@@ -10,7 +14,7 @@ from sympy.core.mul import Mul
 from sympy.core.numbers import (mpf_norm, seterr,
     Integer, I, pi, comp, Rational, E, nan,
     oo, AlgebraicNumber, Number, Float, zoo, equal_valued,
-    int_valued)
+    int_valued, all_close)
 from sympy.core.intfunc import (igcd, igcdex, igcd2, igcd_lehmer,
     ilcm, integer_nthroot, isqrt, integer_log, mod_inverse)
 from sympy.core.power import Pow
@@ -29,12 +33,14 @@ from sympy.printing.latex import latex
 from sympy.printing.repr import srepr
 from sympy.simplify import simplify
 from sympy.polys.domains.groundtypes import PythonRational
-from sympy.utilities.decorator import conserve_mpmath_dps
 from sympy.utilities.iterables import permutations
-from sympy.testing.pytest import XFAIL, raises, _both_exp_pow
+from sympy.testing.pytest import (raises, _both_exp_pow,
+                                  warns_deprecated_sympy)
+from sympy import Add
 
 from mpmath import mpf
 import mpmath
+from sympy.external.mpmath import finf, fninf, conserve_mpmath_dps
 from sympy.core import numbers
 t = Symbol('t', real=False)
 
@@ -47,6 +53,7 @@ def same_and_same_prec(a, b):
     return a == b and a._prec == b._prec
 
 
+@pytest.mark.thread_unsafe(reason="mutates process-global division error state")
 def test_seterr():
     seterr(divide=True)
     raises(ValueError, lambda: S.Zero/S.Zero)
@@ -279,7 +286,7 @@ def test_igcdex():
     assert igcdex(2, 3) == (-1, 1, 1)
     assert igcdex(10, 12) == (-1, 1, 2)
     assert igcdex(100, 2004) == (-20, 1, 4)
-    assert igcdex(0, 0) == (0, 1, 0)
+    assert igcdex(0, 0) == (0, 0, 0)
     assert igcdex(1, 0) == (1, 0, 1)
 
 
@@ -320,6 +327,9 @@ def test_Integer_new():
     assert Integer(Rational('1.' + '9'*20)) == 1
 
 
+@pytest.mark.thread_unsafe(
+    reason="expects warning side effects from cached constructors"
+)
 def test_Rational_new():
     """"
     Test for Rational constructor
@@ -362,10 +372,15 @@ def test_Rational_new():
 
     assert Rational(PythonRational(2, 6)) == Rational(1, 3)
 
-    assert Rational(2, 4, gcd=1).q == 4
-    n = Rational(2, -4, gcd=1)
+    with warns_deprecated_sympy():
+        assert Rational(2, 4, gcd=1).q == 4
+    with warns_deprecated_sympy():
+        n = Rational(2, -4, gcd=1)
     assert n.q == 4
     assert n.p == -2
+
+    assert Rational.from_coprime_ints(3, 5) == Rational(3, 5)
+
 
 def test_issue_24543():
     for p in ('1.5', 1.5, 2):
@@ -454,13 +469,27 @@ def test_Float():
         t = Float("1.0E-15")
         return (-t < a - b < t)
 
-    zeros = (0, S.Zero, 0., Float(0))
-    for i, j in permutations(zeros[:-1], 2):
-        assert i == j
-    for i, j in permutations(zeros[-2:], 2):
-        assert i == j
-    for z in zeros:
-        assert z in zeros
+    equal_pairs = [
+        (0, 0.0), # This is just how Python works...
+        (0, S.Zero),
+        (0.0, Float(0)),
+    ]
+    unequal_pairs = [
+        (0.0, S.Zero),
+        (0, Float(0)),
+        (S.Zero, Float(0)),
+    ]
+    for p1, p2 in equal_pairs:
+        assert (p1 == p2) is True
+        assert (p1 != p2) is False
+        assert (p2 == p1) is True
+        assert (p2 != p1) is False
+    for p1, p2 in unequal_pairs:
+        assert (p1 == p2) is False
+        assert (p1 != p2) is True
+        assert (p2 == p1) is False
+        assert (p2 != p1) is True
+
     assert S.Zero.is_zero
 
     a = Float(2) ** Float(3)
@@ -504,7 +533,7 @@ def test_Float():
     # rationality properties
     # if the integer test fails then the use of intlike
     # should be removed from gamma_functions.py
-    assert Float(1).is_integer is False
+    assert Float(1).is_integer is None
     assert Float(1).is_rational is None
     assert Float(1).is_irrational is None
     assert sqrt(2).n(15).is_rational is None
@@ -1811,22 +1840,6 @@ def test_rounding_issue_4172():
         734833795660954410469466
 
 
-@XFAIL
-def test_mpmath_issues():
-    from mpmath.libmp.libmpf import _normalize
-    import mpmath.libmp as mlib
-    rnd = mlib.round_nearest
-    mpf = (0, int(0), -123, -1, 53, rnd)  # nan
-    assert _normalize(mpf, 53) != (0, int(0), 0, 0)
-    mpf = (0, int(0), -456, -2, 53, rnd)  # +inf
-    assert _normalize(mpf, 53) != (0, int(0), 0, 0)
-    mpf = (1, int(0), -789, -3, 53, rnd)  # -inf
-    assert _normalize(mpf, 53) != (0, int(0), 0, 0)
-
-    from mpmath.libmp.libmpf import fnan
-    assert mlib.mpf_eq(fnan, fnan)
-
-
 def test_Catalan_EulerGamma_prec():
     n = GoldenRatio
     f = Float(n.n(), 5)
@@ -1900,7 +1913,6 @@ def test_Float_eq():
 
 
 def test_issue_6640():
-    from mpmath.libmp.libmpf import finf, fninf
     # fnan is not included because Float no longer returns fnan,
     # but otherwise, the same sort of test could apply
     assert Float(finf).is_zero is False
@@ -2280,3 +2292,53 @@ def test_equal_valued():
                     continue
                 for value_j in values_n:
                     assert equal_valued(value_i, value_j) is False
+
+
+def test_all_close():
+    x = Symbol('x')
+    y = Symbol('y')
+    z = Symbol('z')
+    assert all_close(2, 2) is True
+    assert all_close(2, 2.0000) is True
+    assert all_close(2, 2.0001) is False
+    assert all_close(1/3, 1/3.0001) is False
+    assert all_close(1/3, 1/3.0001, 1e-3, 1e-3) is True
+    assert all_close(1/3, Rational(1, 3)) is True
+    assert all_close(0.1*exp(0.2*x), exp(x/5)/10) is True
+    # The expressions should be structurally the same modulo identity:
+    assert all_close(1.4142135623730951, sqrt(2)) is False
+    assert all_close(1.4142135623730951, sqrt(2).evalf()) is True
+    assert all_close(x + 1e-20, x) is True
+    # We should be able to match terms of an Add/Mul in any order
+    assert all_close(Add(1, 2, evaluate=False), Add(2, 1, evaluate=False))
+    # coverage
+    assert not all_close(2*x, 3*x)
+    assert all_close(2*x, 3*x, 1)
+    assert not all_close(2*x, 3*x, 0, 0.5)
+    assert all_close(2*x, 3*x, 0, 1)
+    assert not all_close(y*x, z*x)
+    assert all_close(2*x*exp(1.0*x), 2.0*x*exp(x))
+    assert not all_close(2*x*exp(1.0*x), 2.0*x*exp(2.*x))
+    assert all_close(x + 2.*y, 1.*x + 2*y)
+    assert all_close(x + exp(2.*x)*y, 1.*x + exp(2*x)*y)
+    assert not all_close(x + exp(2.*x)*y, 1.*x + 2*exp(2*x)*y)
+    assert not all_close(x + exp(2.*x)*y, 1.*x + exp(3*x)*y)
+    assert not all_close(x + 2.*y, 1.*x + 3*y)
+
+
+def test_issue_28222():
+    from sympy import I, pi, Mod, exp, S
+    # These cases previously raised TypeError due to invalid comparison of complex numbers
+    assert Mod(I, 200) == Mod(I, 200)
+    assert Mod(I, pi**(2*pi)) == Mod(I, pi**(2*pi))
+    assert Mod(-I, 5) == Mod(-I, 5)
+    assert Mod(2 + 3*I, 10) == Mod(2 + 3*I, 10)
+    assert Mod(I, exp(1)) == Mod(I, exp(1))
+    assert Mod(I, S(1.5)) == Mod(I, S(1.5))
+
+def test_issue_19988_Float_pickle_precision():
+    import pickle
+    from sympy import Float, pi
+    original = Float(pi, dps=100)
+    unpickled = pickle.loads(pickle.dumps(original))
+    assert original._prec == unpickled._prec

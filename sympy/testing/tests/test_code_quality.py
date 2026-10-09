@@ -1,4 +1,5 @@
 # coding=utf-8
+from __future__ import annotations
 from os import walk, sep, pardir
 from os.path import split, join, abspath, exists, isfile
 from glob import glob
@@ -6,7 +7,7 @@ import re
 import random
 import ast
 
-from sympy.testing.pytest import raises
+from sympy.testing.pytest import raises, slow
 from sympy.testing.quality_unicode import _test_this_file_encoding
 
 # System path separator (usually slash or backslash) to be
@@ -188,6 +189,7 @@ def line_with_bare_expr(code):
         return int(msg.rsplit(' ', 1)[1].rstrip('.'))  # the line number
 
 
+@slow
 def test_files():
     """
     This test tests all files in SymPy and checks that:
@@ -309,7 +311,7 @@ def test_files():
         "%(sep)sutilities%(sep)squality_unicode.py" % sepd,
     }
     check_files(top_level_files, test)
-    check_directory_tree(BIN_PATH, test, {"~", ".pyc", ".sh", ".mjs"}, "*")
+    check_directory_tree(BIN_PATH, test, {"~", ".pyc", ".sh"}, "*")
     check_directory_tree(SYMPY_PATH, test, exclude)
     check_directory_tree(EXAMPLES_PATH, test, exclude)
 

@@ -1,3 +1,4 @@
+from __future__ import annotations
 from sympy.matrices.expressions.trace import Trace
 from sympy.testing.pytest import raises, slow
 from sympy.matrices.expressions.blockmatrix import (
@@ -9,7 +10,7 @@ from sympy.matrices.expressions import (
 from sympy.matrices.expressions.inverse import Inverse
 from sympy.matrices.expressions.matpow import MatPow
 from sympy.matrices.expressions.transpose import Transpose
-from sympy.matrices.common import NonInvertibleMatrixError
+from sympy.matrices.exceptions import NonInvertibleMatrixError
 from sympy.matrices import (
     Matrix, ImmutableMatrix, ImmutableSparseMatrix, zeros)
 from sympy.core import Tuple, Expr, S, Function
@@ -121,6 +122,9 @@ def test_issue_17624():
 def test_issue_18618():
     A = Matrix([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
     assert A == Matrix(BlockDiagMatrix(A))
+
+def test_issue_28225():
+    raises(ValueError, lambda: BlockDiagMatrix(2, 2))
 
 def test_BlockMatrix_trace():
     A, B, C, D = [MatrixSymbol(s, 3, 3) for s in 'ABCD']

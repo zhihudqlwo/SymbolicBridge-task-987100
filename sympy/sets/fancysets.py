@@ -1,6 +1,8 @@
+from __future__ import annotations
 from functools import reduce
 from itertools import product
 
+from sympy.assumptions import Q
 from sympy.core.basic import Basic
 from sympy.core.containers import Tuple
 from sympy.core.expr import Expr
@@ -8,7 +10,7 @@ from sympy.core.function import Lambda
 from sympy.core.logic import fuzzy_not, fuzzy_or, fuzzy_and
 from sympy.core.mod import Mod
 from sympy.core.intfunc import igcd
-from sympy.core.numbers import oo, Rational
+from sympy.core.numbers import oo, Rational, Integer
 from sympy.core.relational import Eq, is_eq
 from sympy.core.kind import NumberKind
 from sympy.core.singleton import Singleton, S
@@ -100,7 +102,7 @@ class Naturals(Set, metaclass=Singleton):
     """
 
     is_iterable = True
-    _inf = S.One
+    _inf: Integer = S.One
     _sup = S.Infinity
     is_empty = False
     is_finite_set = False
@@ -804,7 +806,11 @@ class Range(Set):
         # this only distinguishes between definite null range
         # and non-null/unknown null; getting True doesn't mean
         # that it actually is not null
-        b = is_eq(self.start, self.stop)
+        assumptions = [
+            Q.finite(a) for a in (self.start, self.stop)
+            if a.is_infinite is not True]
+        assumptions = And(*assumptions) if assumptions else None
+        b = is_eq(self.start, self.stop, assumptions=assumptions)
         if b is None:
             raise ValueError('cannot tell if Range is null or not')
         return not bool(b)

@@ -1,4 +1,5 @@
 """Inference in propositional logic"""
+from __future__ import annotations
 
 from sympy.logic.boolalg import And, Not, conjuncts, to_cnf, BooleanFunction
 from sympy.core.sorting import ordered
@@ -22,9 +23,7 @@ def literal_symbol(literal):
 
     """
 
-    if literal is True or literal is False:
-        return literal
-    elif literal.is_Symbol:
+    if literal is True or literal is False or literal.is_Symbol:
         return literal
     elif literal.is_Not:
         return literal_symbol(literal.args[0])
@@ -206,7 +205,7 @@ def pl_true(expr, model=None, deep=False):
     if result in boolean:
         return bool(result)
     if deep:
-        model = {k: True for k in result.atoms()}
+        model = dict.fromkeys(result.atoms(), True)
         if pl_true(result, model):
             if valid(result):
                 return True

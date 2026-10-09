@@ -1,9 +1,10 @@
+from __future__ import annotations
 from sympy.core.basic import Basic
 from sympy.core.expr import Expr
 from sympy.core.singleton import S
 from sympy.core.sympify import sympify
-from sympy.matrices.common import NonSquareMatrixError
-from sympy.matrices.matrices import MatrixBase
+from sympy.matrices.exceptions import NonSquareMatrixError
+from sympy.matrices.matrixbase import MatrixBase
 
 
 class Determinant(Expr):
@@ -51,6 +52,10 @@ class Determinant(Expr):
             return result
 
         return self
+
+    def _eval_derivative(self, x):
+        # Derivative currently implements `hasattr(..., "_eval_derivative")` to proceed:
+        return None
 
 
 def det(matexpr):

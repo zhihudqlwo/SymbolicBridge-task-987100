@@ -1,3 +1,4 @@
+from __future__ import annotations
 from sympy.physics.units.definitions.dimension_definitions import current, temperature, amount_of_substance, \
     luminous_intensity, angle, charge, voltage, impedance, conductance, capacitance, inductance, magnetic_density, \
     magnetic_flux, information
@@ -30,7 +31,15 @@ mil = angular_mil = angular_mils = Quantity("angular_mil", abbrev="mil")
 # Base units:
 m = meter = meters = Quantity("meter", abbrev="m")
 
-# gram; used to define its prefixed units
+# gram; used to define its prefixed units.
+# NOTE: `gram` is given a scale factor of 1 (it takes no explicit scale factor
+# below, so it defaults to 1) because it is the unprefixed member of the mass
+# family: every mass unit here is expressed as a multiple of `gram`, and the
+# prefixed ones follow their prefix (milligram = milli*gram, kilogram =
+# kilo*gram, etc.).  This is a naming/prefix convention, NOT a statement that
+# the base mass unit is the gram: it is independent of the chosen unit system.
+# In particular this does not mean the code follows MKS -- in SI the base mass
+# unit is the kilogram, and `kilogram` accordingly gets scale factor 1000 here.
 g = gram = grams = Quantity("gram", abbrev="g")
 
 # NOTE: the `kilogram` has scale factor 1000. In SI, kg is a base unit, but
@@ -56,6 +65,13 @@ candela.set_global_dimension(luminous_intensity)
 
 # derived units
 newton = newtons = N = Quantity("newton", abbrev="N")
+
+kilonewton = kilonewtons = kN = Quantity("kilonewton", abbrev="kN")
+kilonewton.set_global_relative_scale_factor(kilo, newton)
+
+meganewton = meganewtons = MN = Quantity("meganewton", abbrev="MN")
+meganewton.set_global_relative_scale_factor(mega, newton)
+
 joule = joules = J = Quantity("joule", abbrev="J")
 watt = watts = W = Quantity("watt", abbrev="W")
 pascal = pascals = Pa = pa = Quantity("pascal", abbrev="Pa")

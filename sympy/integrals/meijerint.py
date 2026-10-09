@@ -32,7 +32,6 @@ import itertools
 from sympy import SYMPY_DEBUG
 from sympy.core import S, Expr
 from sympy.core.add import Add
-from sympy.core.basic import Basic
 from sympy.core.cache import cacheit
 from sympy.core.containers import Tuple
 from sympy.core.exprtools import factor_terms
@@ -295,6 +294,10 @@ def _create_lookup_table(table):
 ####################################################################
 
 from sympy.utilities.timeutils import timethis
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from sympy.core.basic import Basic
 timeit = timethis('meijerg')
 
 
@@ -408,21 +411,18 @@ def _find_splitting_points(expr, x):
     {-3, 0}
     """
     p, q = [Wild(n, exclude=[x]) for n in 'pq']
-
-    def compute_innermost(expr, res):
+    res = set()
+    stack = [expr]
+    while stack:
+        expr = stack.pop()
         if not isinstance(expr, Expr):
-            return
+            continue
         m = expr.match(p*x + q)
         if m and m[p] != 0:
             res.add(-m[q]/m[p])
-            return
-        if expr.is_Atom:
-            return
-        for argument in expr.args:
-            compute_innermost(argument, res)
-    innermost = set()
-    compute_innermost(expr, innermost)
-    return innermost
+        elif not expr.is_Atom:
+            stack.extend(expr.args)
+    return res
 
 
 def _split_mul(f, x):
@@ -568,6 +568,7 @@ def _inflate_fox_h(g, a):
     bs = [(n + 1)/p for n in range(p)]
     return D, meijerg(g.an, g.aother, g.bm, list(g.bother) + bs, z)
 
+
 _dummies: dict[tuple[str, str], Dummy]  = {}
 
 
@@ -588,7 +589,6 @@ def _dummy_(name, token, **kwargs):
     Return a dummy associated to name and token. Same effect as declaring
     it globally.
     """
-    global _dummies
     if not (name, token) in _dummies:
         _dummies[(name, token)] = Dummy(name, **kwargs)
     return _dummies[(name, token)]
@@ -1706,8 +1706,8 @@ def _meijerint_indefinite_1(f, x):
         c += s
 
         # we do a substitution t=a*x**b, get integrand fac*t**rho*g
-        fac_ = fac * C / (b*a**((1 + c)/b))
-        rho = (c + 1)/b - 1
+        fac_ = fac * C * x**(1 + c) / b
+        rho = (c + 1)/b
 
         # we now use t**rho*G(params, t) = G(params + rho, t)
         # [L, page 150, equation (4)]
@@ -1720,13 +1720,13 @@ def _meijerint_indefinite_1(f, x):
         t = _dummy('t', 'meijerint-indefinite', S.One)
 
         def tr(p):
-            return [a + rho + 1 for a in p]
+            return [a + rho for a in p]
         if any(b.is_integer and (b <= 0) == True for b in tr(g.bm)):
             r = -meijerg(
-                tr(g.an), tr(g.aother) + [1], tr(g.bm) + [0], tr(g.bother), t)
+                list(g.an), list(g.aother) + [1-rho], list(g.bm) + [-rho], list(g.bother), t)
         else:
             r = meijerg(
-                tr(g.an) + [1], tr(g.aother), tr(g.bm), tr(g.bother) + [0], t)
+                list(g.an) + [1-rho], list(g.aother), list(g.bm), list(g.bother) + [-rho], t)
         # The antiderivative is most often expected to be defined
         # in the neighborhood of  x = 0.
         if b.is_extended_nonnegative and not f.subs(x, 0).has(S.NaN, S.ComplexInfinity):

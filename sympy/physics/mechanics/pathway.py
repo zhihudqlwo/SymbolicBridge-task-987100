@@ -1,13 +1,16 @@
 """Implementations of pathways for use by actuators."""
+from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
 from sympy.core.singleton import S
-from sympy.physics.mechanics import Force, Point, WrappingGeometryBase
-from sympy.physics.vector import dynamicsymbols
+from sympy.physics.mechanics.loads import Force
+from sympy.physics.mechanics.wrapping_geometry import WrappingGeometryBase
+from sympy.physics.vector import Point, dynamicsymbols
 
 
-__all__ = ['PathwayBase', 'LinearPathway', 'ObstacleSetPathway', 'WrappingPathway']
+__all__ = ['PathwayBase', 'LinearPathway', 'ObstacleSetPathway',
+           'WrappingPathway']
 
 
 class PathwayBase(ABC):
@@ -266,7 +269,7 @@ class ObstacleSetPathway(PathwayBase):
     ===========
 
     An obstacle-set pathway forms a series of straight-line segment between
-    pairs of consecutive points in a set of points. It is similiar to multiple
+    pairs of consecutive points in a set of points. It is similar to multiple
     linear pathways joined end-to-end. It will not interact with any other
     objects in the system, i.e. an ``ObstacleSetPathway`` will intersect other
     objects to ensure that the path between its pairs of points (its
@@ -320,7 +323,7 @@ class ObstacleSetPathway(PathwayBase):
     Parameters
     ==========
 
-    attachments : tuple[Point, Point]
+    attachments : tuple[Point, ...]
         The set of ``Point`` objects that define the segmented obstacle-set
         pathway.
 

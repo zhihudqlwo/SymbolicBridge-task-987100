@@ -61,8 +61,10 @@ domain checking and also shape checking so that the list of lists
 representation is friendlier.
 
 """
+from __future__ import annotations
 from itertools import chain
 
+from sympy.external.gmpy import GROUND_TYPES
 from sympy.utilities.decorator import doctest_depends_on
 
 from .exceptions import (
@@ -94,6 +96,10 @@ from .dense import (
 from .lll import ddm_lll, ddm_lll_transform
 
 
+if GROUND_TYPES != 'flint':
+    __doctest_skip__ = ['DDM.to_dfm', 'DDM.to_dfm_or_ddm']
+
+
 class DDM(list):
     """Dense matrix based on polys domain elements
 
@@ -112,7 +118,7 @@ class DDM(list):
         if len(rowslist) != m or any(len(row) != n for row in rowslist):
             raise DMBadInputError("Inconsistent row-list/shape")
 
-        super().__init__(rowslist)
+        super().__init__([i.copy() for i in rowslist])
         self.shape = (m, n)
         self.rows = m
         self.cols = n
@@ -181,8 +187,9 @@ class DDM(list):
         ========
 
         to_list_flat
+        sympy.polys.matrices.domainmatrix.DomainMatrix.to_list
         """
-        return list(self)
+        return [row[:] for row in self]
 
     def to_list_flat(self):
         """
@@ -202,7 +209,7 @@ class DDM(list):
         See Also
         ========
 
-        from_list_flat
+        sympy.polys.matrices.domainmatrix.DomainMatrix.to_list_flat
         """
         flat = []
         for row in self:
@@ -229,6 +236,7 @@ class DDM(list):
         ========
 
         to_list_flat
+        sympy.polys.matrices.domainmatrix.DomainMatrix.from_list_flat
         """
         assert type(flat) is list
         rows, cols = shape
@@ -304,6 +312,62 @@ class DDM(list):
         """
         return SDM.from_flat_nz(elements, data, domain).to_ddm()
 
+    def to_dod(self):
+        """
+        Convert to a dictionary of dictionaries (dod) format.
+
+        Examples
+        ========
+
+        >>> from sympy.polys.matrices.ddm import DDM
+        >>> from sympy import QQ
+        >>> A = DDM([[1, 2], [3, 4]], (2, 2), QQ)
+        >>> A.to_dod()
+        {0: {0: 1, 1: 2}, 1: {0: 3, 1: 4}}
+
+        See Also
+        ========
+
+        from_dod
+        sympy.polys.matrices.sdm.SDM.to_dod
+        sympy.polys.matrices.domainmatrix.DomainMatrix.to_dod
+        """
+        dod = {}
+        for i, row in enumerate(self):
+            row = {j:e for j, e in enumerate(row) if e}
+            if row:
+                dod[i] = row
+        return dod
+
+    @classmethod
+    def from_dod(cls, dod, shape, domain):
+        """
+        Create a :class:`DDM` from a dictionary of dictionaries (dod) format.
+
+        Examples
+        ========
+
+        >>> from sympy.polys.matrices.ddm import DDM
+        >>> from sympy import QQ
+        >>> dod = {0: {0: 1, 1: 2}, 1: {0: 3, 1: 4}}
+        >>> A = DDM.from_dod(dod, (2, 2), QQ)
+        >>> A
+        [[1, 2], [3, 4]]
+
+        See Also
+        ========
+
+        to_dod
+        sympy.polys.matrices.sdm.SDM.from_dod
+        sympy.polys.matrices.domainmatrix.DomainMatrix.from_dod
+        """
+        rows, cols = shape
+        lol = [[domain.zero] * cols for _ in range(rows)]
+        for i, row in dod.items():
+            for j, element in row.items():
+                lol[i][j] = element
+        return DDM(lol, shape, domain)
+
     def to_dok(self):
         """
         Convert :class:`DDM` to dictionary of keys (dok) format.
@@ -358,6 +422,54 @@ class DDM(list):
         for (i, j), element in dok.items():
             lol[i][j] = element
         return DDM(lol, shape, domain)
+
+    def iter_values(self):
+        """
+        Iterate over the non-zero values of the matrix.
+
+        Examples
+        ========
+
+        >>> from sympy.polys.matrices.ddm import DDM
+        >>> from sympy import QQ
+        >>> A = DDM([[QQ(1), QQ(0)], [QQ(3), QQ(4)]], (2, 2), QQ)
+        >>> list(A.iter_values())
+        [1, 3, 4]
+
+        See Also
+        ========
+
+        iter_items
+        to_list_flat
+        sympy.polys.matrices.domainmatrix.DomainMatrix.iter_values
+        """
+        for row in self:
+            yield from filter(None, row)
+
+    def iter_items(self):
+        """
+        Iterate over indices and values of nonzero elements of the matrix.
+
+        Examples
+        ========
+
+        >>> from sympy.polys.matrices.ddm import DDM
+        >>> from sympy import QQ
+        >>> A = DDM([[QQ(1), QQ(0)], [QQ(3), QQ(4)]], (2, 2), QQ)
+        >>> list(A.iter_items())
+        [((0, 0), 1), ((1, 0), 3), ((1, 1), 4)]
+
+        See Also
+        ========
+
+        iter_values
+        to_dok
+        sympy.polys.matrices.domainmatrix.DomainMatrix.iter_items
+        """
+        for i, row in enumerate(self):
+            for j, element in enumerate(row):
+                if element:
+                    yield (i, j), element
 
     def to_ddm(self):
         """
@@ -512,6 +624,26 @@ class DDM(list):
         else:
             ddmT = [[]] * cols
         return DDM(ddmT, (cols, rows), self.domain)
+
+    def conjugate(self):
+        dom = self.domain
+        if not dom.is_ConjugateDomain:
+            raise DMDomainError("%s does not support conjugation" % dom)
+
+        if dom.is_ZZ or dom.is_QQ or dom.is_RR:
+            return self.copy()
+        else:
+            return self.applyfunc(dom.conjugate, dom)
+
+    def adjoint(self):
+        dom = self.domain
+        if not (dom.is_EXRAW or dom.is_EX):
+            return self.conjugate().transpose()
+        elif dom.is_EXRAW:
+            # handle noncommutative elements
+            return self.applyfunc(lambda x: x.adjoint(), dom).transpose()
+        else:
+            return self.applyfunc(lambda x: dom.dtype(x.ex.adjoint()), dom).transpose()
 
     def __add__(a, b):
         if not isinstance(b, DDM):
@@ -846,6 +978,153 @@ class DDM(list):
         swaps = ddm_ilu_split(L, U, K)
 
         return L, U, swaps
+
+    def _fflu(self):
+        """
+        Private method for Phase 1 of fraction-free LU decomposition.
+        Performs row operations and elimination to compute U and permutation indices.
+
+        Returns:
+            LU : decomposition as a single matrix.
+            perm (list): Permutation indices for row swaps.
+        """
+        rows, cols = self.shape
+        K = self.domain
+
+        LU = self.copy()
+        perm = list(range(rows))
+        rank = 0
+
+        for j in range(min(rows, cols)):
+            # Skip columns where all entries are zero
+            if all(LU[i][j] == K.zero for i in range(rows)):
+                continue
+
+            # Find the first non-zero pivot in the current column
+            pivot_row = -1
+            for i in range(rank, rows):
+                if LU[i][j] != K.zero:
+                    pivot_row = i
+                    break
+
+            # If no pivot is found, skip column
+            if pivot_row == -1:
+                continue
+
+            # Swap rows to bring the pivot to the current rank
+            if pivot_row != rank:
+                LU[rank], LU[pivot_row] = LU[pivot_row], LU[rank]
+                perm[rank], perm[pivot_row] = perm[pivot_row], perm[rank]
+
+            # Found pivot - (Gauss-Bareiss elimination)
+            pivot = LU[rank][j]
+            for i in range(rank + 1, rows):
+                multiplier = LU[i][j]
+                # Denominator is previous pivot or 1
+                denominator = LU[rank - 1][rank - 1] if rank > 0 else K.one
+                for k in range(j + 1, cols):
+                    LU[i][k] = K.exquo(pivot * LU[i][k] - LU[rank][k] * multiplier, denominator)
+                # Keep the multiplier for L matrix
+                LU[i][j] = multiplier
+            rank += 1
+
+        return LU, perm
+
+    def fflu(self):
+        """
+        Fraction-free LU decomposition of DDM.
+
+        See Also
+        ========
+
+        sympy.polys.matrices.domainmatrix.DomainMatrix.fflu
+            The higher-level interface to this function.
+        """
+        rows, cols = self.shape
+        K = self.domain
+
+        # Phase 1: Perform row operations and get permutation
+        U, perm = self._fflu()
+
+        # Phase 2: Construct P, L, D matrices
+        # Create P from permutation
+        P = self.zeros((rows, rows), K)
+        for i, pi in enumerate(perm):
+            P[i][pi] = K.one
+
+        # Create L matrix
+        L = self.zeros((rows, rows), K)
+        i = j = 0
+        while i < rows and j < cols:
+            if U[i][j] != K.zero:
+                # Found non-zero pivot
+                # Diagonal entry is the pivot
+                L[i][i] = U[i][j]
+                for l in range(i + 1, rows):
+                    # Off-diagonal entries are the multipliers
+                    L[l][i] = U[l][j]
+                    # zero out the entries in U
+                    U[l][j] = K.zero
+                i += 1
+            j += 1
+
+        # Fill remaining diagonal of L with ones
+        for i in range(i, rows):
+            L[i][i] = K.one
+
+        # Create D matrix - using FLINT's approach with accumulator
+        D = self.zeros((rows, rows), K)
+        if rows >= 1:
+            D[0][0] = L[0][0]
+        di = K.one
+        for i in range(1, rows):
+            # Accumulate product of pivots
+            di = L[i - 1][i - 1] * L[i][i]
+            D[i][i] = di
+
+        return P, L, D, U
+
+    def qr(self):
+        """
+        QR decomposition for DDM.
+
+        Returns:
+            - Q: Orthogonal matrix as a DDM.
+            - R: Upper triangular matrix as a DDM.
+
+        See Also
+        ========
+
+        sympy.polys.matrices.domainmatrix.DomainMatrix.qr
+            The higher-level interface to this function.
+        """
+        rows, cols = self.shape
+        K = self.domain
+        Q = self.copy()
+        R = self.zeros((min(rows, cols), cols), K)
+
+        # Check that the domain is a field
+        if not K.is_Field:
+            raise DMDomainError("QR decomposition requires a field (e.g. QQ).")
+
+        dot_cols = lambda i, j: K.sum(Q[k][i] * Q[k][j] for k in range(rows))
+
+        for j in range(cols):
+            for i in range(min(j, rows)):
+                dot_ii = dot_cols(i, i)
+                if dot_ii != K.zero:
+                    R[i][j] = dot_cols(i, j) / dot_ii
+                    for k in range(rows):
+                        Q[k][j] -= R[i][j] * Q[k][i]
+
+            if j < rows:
+                dot_jj = dot_cols(j, j)
+                if dot_jj != K.zero:
+                    R[j][j] = K.one
+
+        Q = Q.extract(range(rows), range(min(rows, cols)))
+
+        return Q, R
 
     def lu_solve(a, b):
         """x where a*x = b"""

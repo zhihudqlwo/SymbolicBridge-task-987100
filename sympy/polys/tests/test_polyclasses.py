@@ -1,5 +1,7 @@
 """Tests for OO layer of several polynomial representations. """
+from __future__ import annotations
 
+from sympy.core.singleton import S
 from sympy.functions.elementary.miscellaneous import sqrt
 from sympy.polys.domains import ZZ, QQ
 from sympy.polys.polyclasses import DMP, DMF, ANP
@@ -162,6 +164,30 @@ def test_DMP_arithmetics():
 
     raises(ExactQuotientFailed, lambda: f.exquo(g))
 
+    f = DMP([ZZ(1), ZZ(0), ZZ(-1)], ZZ)
+    g = DMP([ZZ(2), ZZ(-2)], ZZ)
+
+    q = DMP([], ZZ)
+    r = f
+
+    pq = DMP([ZZ(2), ZZ(2)], ZZ)
+    pr = DMP([], ZZ)
+
+    assert f.div(g) == (q, r)
+    assert f.quo(g) == q
+    assert f.rem(g) == r
+
+    assert divmod(f, g) == (q, r)
+    assert f // g == q
+    assert f % g == r
+
+    raises(ExactQuotientFailed, lambda: f.exquo(g))
+
+    assert f.pdiv(g) == (pq, pr)
+    assert f.pquo(g) == pq
+    assert f.prem(g) == pr
+    assert f.pexquo(g) == pq
+
 
 def test_DMP_functionality():
     f = DMP([[ZZ(1)], [ZZ(2), ZZ(0)], [ZZ(1), ZZ(0), ZZ(0)]], ZZ)
@@ -177,6 +203,8 @@ def test_DMP_functionality():
     assert f.nth(1, 1) == ZZ(2)
 
     raises(TypeError, lambda: f.nth(0, 'x'))
+    raises(TypeError, lambda: f.nth(0, .5))
+    raises(TypeError, lambda: f.nth(0, S(1)))
 
     assert f.max_norm() == 2
     assert f.l1_norm() == 4
@@ -207,6 +235,20 @@ def test_DMP_functionality():
 
     assert (4*f).content() == ZZ(4)
     assert (4*f).primitive() == (ZZ(4), f)
+
+    f = DMP([QQ(1,3), QQ(1)], QQ)
+    g = DMP([QQ(1,7), QQ(1)], QQ)
+
+    assert f.cancel(g) == f.cancel(g, include=True) == (
+        DMP([QQ(7), QQ(21)], QQ),
+        DMP([QQ(3), QQ(21)], QQ)
+    )
+    assert f.cancel(g, include=False) == (
+        QQ(7),
+        QQ(3),
+        DMP([QQ(1), QQ(3)], QQ),
+        DMP([QQ(1), QQ(7)], QQ)
+    )
 
     f = DMP([[ZZ(1)], [ZZ(2)], [ZZ(3)], [ZZ(4)], [ZZ(5)], [ZZ(6)]], ZZ)
 
@@ -447,6 +489,10 @@ def test_ANP___init__():
 
     raises(CoercionFailed, lambda: ANP([sqrt(2)], mod, QQ))
 
+    # https://github.com/sympy/sympy/issues/28182
+    f = ANP({(0,): -2, (2,): 1}, [1, 0, -2], QQ)
+    assert f.to_list() == []
+
 
 def test_ANP___eq__():
     a = ANP([QQ(1), QQ(1)], [QQ(1), QQ(0), QQ(1)], QQ)
@@ -548,3 +594,16 @@ def test_ANP_unify():
     assert b.unify_ANP(a)[-1] == QQ
     assert a.unify_ANP(a)[-1] == QQ
     assert b.unify_ANP(b)[-1] == ZZ
+
+
+def test_zero_poly():
+    from sympy import Symbol
+    x = Symbol('x')
+
+    R_old = ZZ.old_poly_ring(x)
+    zero_poly_old = R_old(0)
+    cont_old, prim_old = zero_poly_old.primitive()
+
+    assert cont_old == 0
+    assert prim_old == zero_poly_old
+    assert prim_old.is_primitive is False
