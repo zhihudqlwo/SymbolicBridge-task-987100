@@ -1,0 +1,572 @@
+# SymbolicBridge
+
+This repository maintains a Python-source mirror for symbolic mathematics.
+
+## Maintenance
+
+### 📝 Complete TODO List
+
+- [ ] **sympy/algebras/quaternion.py:1097** - # TODO: is this expression correct?
+- [ ] **sympy/assumptions/handlers/matrices.py:47** - # TODO: implement sathandlers system for the matrices.
+- [ ] **sympy/assumptions/handlers/matrices.py:77** - # TODO: implement sathandlers system for the matrices.
+- [ ] **sympy/assumptions/handlers/matrices.py:94** - # TODO: implement sathandlers system for the matrices.
+- [ ] **sympy/assumptions/handlers/order.py:214** - # TODO: This should be deducible from the nonzero handler
+- [ ] **sympy/assumptions/predicates/calculus.py:57** - # TODO: Add examples
+- [ ] **sympy/assumptions/predicates/common.py:17** - # TODO: Add examples
+- [ ] **sympy/assumptions/predicates/matrices.py:70** - # TODO: Add handlers to make these keys work with
+- [ ] **sympy/assumptions/predicates/sets.py:238** - # TODO: Add examples
+- [ ] **sympy/assumptions/predicates/sets.py:337** - # TODO: Add examples
+- [ ] **sympy/assumptions/predicates/sets.py:394** - # TODO: Add examples
+- [ ] **sympy/assumptions/refine.py:53** - # TODO: this will probably not work with Integral or Polynomial
+- [ ] **sympy/assumptions/satask.py:103** - # TODO: Run additional checks to see which combination of the
+- [ ] **sympy/calculus/accumulationbounds.py:689** - # TODO : Devise a better method for Union of AccumBounds
+- [ ] **sympy/calculus/util.py:268** - # TODO: handle piecewise defined functions
+- [ ] **sympy/calculus/util.py:269** - # TODO: handle transcendental functions
+- [ ] **sympy/calculus/util.py:270** - # TODO: handle multivariate functions
+- [ ] **sympy/categories/diagram_drawing.py:2505** - # prop is a Symbol.  TODO: Find out why.
+- [ ] **sympy/codegen/rewriting.py:330** - # TODO: We should be able to support more than 2 elements
+- [ ] **sympy/codegen/tests/test_rewriting.py:442** - # TODO: this should ideally be automatically handled.
+- [ ] **sympy/combinatorics/fp_groups.py:353** - # TODO: use |G:H| = |G|/|H| (currently H can't be made into a group)
+- [ ] **sympy/combinatorics/fp_groups.py:903** - # TODO: this should support input of a list of general words
+- [ ] **sympy/concrete/summations.py:600** - # TODO
+- [ ] **sympy/concrete/tests/test_sums_products.py:1019** - # TODO Implement matrix geometric series summation.
+- [ ] **sympy/core/add.py:276** - # TODO zerocopy?
+- [ ] **sympy/core/expr.py:3659** - # TODO: Smarter heuristics
+- [ ] **sympy/core/exprtools.py:251** - # todo: after dropping python 3.7 support, use overload and Literal
+- [ ] **sympy/core/exprtools.py:1547** - # XXX TODO there should be a way to inspect what order the terms
+- [ ] **sympy/core/facts.py:310** - # TODO write more?
+- [ ] **sympy/core/function.py:210** - # TODO: Look at nargs
+- [ ] **sympy/core/function.py:1386** - #TODO: check if assumption of discontinuous derivatives exist
+- [ ] **sympy/core/function.py:1643** - # TODO: deprecate?  YES, make this 'enumerated_variables' and
+- [ ] **sympy/core/function.py:1645** - # TODO: support for `d^n`?
+- [ ] **sympy/core/mul.py:418** - # TODO: Make non-commutative exponents not combine automatically
+- [ ] **sympy/core/mul.py:1031** - # TODO: Should these be self.func?
+- [ ] **sympy/core/mul.py:1172** - # TODO: Should this be self.func?
+- [ ] **sympy/core/numbers.py:176** - # TODO: we should use the warnings module
+- [ ] **sympy/core/numbers.py:274** - # TODO caching with decorator, but not to degrade performance
+- [ ] **sympy/core/numbers.py:1417** - #TODO: this can probably be optimized more
+- [ ] **sympy/core/numbers.py:1848** - # TODO make it decorator + bytecodehacks?
+- [ ] **sympy/core/symbol.py:589** - # TODO add check against another Wild
+- [ ] **sympy/core/tests/test_assumptions.py:410** - # TODO Change to x.is_nonzero is None
+- [ ] **sympy/core/tests/test_basic.py:205** - # TODO UndefinedFunction does not subclass Expr
+- [ ] **sympy/core/tests/test_diff.py:138** - # TODO: assert diff(x**2, (x, n)) == x**(2-n)*ff(2, n)
+- [ ] **sympy/core/tests/test_expr.py:914** - # TODO UndefinedFunction does not subclass Expr
+- [ ] **sympy/core/tests/test_facts.py:70** - # TODO move me to appropriate place
+- [ ] **sympy/core/tests/test_function.py:1448** - # TODO: Disable string inputs (https://github.com/sympy/sympy/issues/11003)
+- [ ] **sympy/diffgeom/diffgeom.py:26** - # TODO you are a bit excessive in the use of Dummies
+- [ ] **sympy/diffgeom/diffgeom.py:27** - # TODO dummy point, literal field
+- [ ] **sympy/diffgeom/diffgeom.py:28** - # TODO too often one needs to call doit or simplify on the output, check the
+- [ ] **sympy/diffgeom/diffgeom.py:1101** - # TODO: you need a real dummy function for the next line
+- [ ] **sympy/diffgeom/diffgeom.py:1312** - # TODO this is ugly - the Commutator can be Zero and
+- [ ] **sympy/diffgeom/diffgeom.py:1441** - # TODO the calculation of signatures is slow
+- [ ] **sympy/diffgeom/diffgeom.py:1442** - # TODO you do not need all these permutations (neither the prefactor)
+- [ ] **sympy/diffgeom/diffgeom.py:1597** - # TODO: you need a real dummy function for the next line
+- [ ] **sympy/diffgeom/diffgeom.py:1895** - # TODO Is this a good idea?
+- [ ] **sympy/diffgeom/diffgeom.py:1922** - # TODO move some of this to class methods.
+- [ ] **sympy/diffgeom/diffgeom.py:1923** - # TODO rewrite using the .as_blah_blah methods
+- [ ] **sympy/diffgeom/diffgeom.py:1968** - # TODO move some of this to class methods.
+- [ ] **sympy/diffgeom/diffgeom.py:1969** - # TODO rewrite using the .as_blah_blah methods
+- [ ] **sympy/diffgeom/tests/test_class_structure.py:19** - #TODO assert point.subs(x, 2) == Point(cs, [2, y])
+- [ ] **sympy/diffgeom/tests/test_class_structure.py:20** - #TODO assert point.free_symbols == set([x, y])
+- [ ] **sympy/diffgeom/tests/test_diffgeom.py:103** - #TODO assert m == R2_r.transform(R2_p, R2_p.transform(R2_r, [a, b])).applyfunc(simplify)
+- [ ] **sympy/diffgeom/tests/test_diffgeom.py:117** - #TODO assert m == R3_r.transform(R3_c, R3_c.transform(R3_r, m)).applyfunc(simplify)
+- [ ] **sympy/diffgeom/tests/test_diffgeom.py:120** - #TODO assert m == R3_r.transform(R3_s, R3_s.transform(R3_r, m)).applyfunc(simplify)
+- [ ] **sympy/diffgeom/tests/test_diffgeom.py:123** - #TODO assert m == R3_c.transform(R3_s, R3_s.transform(R3_c, m)).applyfunc(simplify)
+- [ ] **sympy/diffgeom/tests/test_diffgeom.py:128** - #TODO assert m == R3_r.coord_tuple_transform_to(R3_c, R3_c.coord_tuple_transform_to(R3_r, m)).applyfunc(simplify)
+- [ ] **sympy/diffgeom/tests/test_diffgeom.py:131** - #TODO assert m == R3_r.coord_tuple_transform_to(R3_s, R3_s.coord_tuple_transform_to(R3_r, m)).applyfunc(simplify)
+- [ ] **sympy/diffgeom/tests/test_diffgeom.py:134** - #TODO assert m == R3_c.coord_tuple_transform_to(R3_s, R3_s.coord_tuple_transform_to(R3_c, m)).applyfunc(simplify)
+- [ ] **sympy/diffgeom/tests/test_hyperbolic_space.py:86** - #TODO - it would be nice to have index contraction built-in
+- [ ] **sympy/functions/combinatorial/factorials.py:423** - # TODO: extend this to complex numbers?
+- [ ] **sympy/functions/combinatorial/numbers.py:2125** - # TODO: make this a class like bell()
+- [ ] **sympy/functions/elementary/exponential.py:989** - # TODO new and probably slow
+- [ ] **sympy/functions/elementary/hyperbolic.py:283** - # TODO, implement more if deep stuff here
+- [ ] **sympy/functions/elementary/hyperbolic.py:480** - # TODO, implement more if deep stuff here
+- [ ] **sympy/functions/elementary/piecewise.py:577** - # TODO simplify hi <= upto
+- [ ] **sympy/functions/elementary/tests/test_complexes.py:926** - # TODO XXX why does abs(x)._eval_evalf() not fall back to global evalf?
+- [ ] **sympy/functions/elementary/tests/test_hyperbolic.py:1020** - # TODO: Tests concerning re(ndir) == 0
+- [ ] **sympy/functions/elementary/tests/test_piecewise.py:1223** - # TODO raise error if function is discontinuous at limit of
+- [ ] **sympy/functions/elementary/trigonometric.py:494** - # TODO, implement more if deep stuff here
+- [ ] **sympy/functions/elementary/trigonometric.py:495** - # TODO: Do this more efficiently for more than two terms
+- [ ] **sympy/functions/elementary/trigonometric.py:860** - # TODO: Do this more efficiently for more than two terms
+- [ ] **sympy/functions/elementary/trigonometric.py:1568** - # TODO refactor into TrigonometricFunction common parts of
+- [ ] **sympy/functions/special/bessel.py:25** - # TODO
+- [ ] **sympy/functions/special/delta_functions.py:656** - # TODO
+- [ ] **sympy/functions/special/error_functions.py:23** - # TODO series expansions
+- [ ] **sympy/functions/special/error_functions.py:24** - # TODO see the "Note:" in Ei
+- [ ] **sympy/functions/special/error_functions.py:1201** - # TODO:
+- [ ] **sympy/functions/special/error_functions.py:2678** - # TODO: is the series really correct?
+- [ ] **sympy/functions/special/gamma_functions.py:687** - # TODO n == 1 also can do some rational z
+- [ ] **sympy/functions/special/hyper.py:47** - # TODO should __new__ accept **options?
+- [ ] **sympy/functions/special/hyper.py:48** - # TODO should constructors should check if parameters are sensible?
+- [ ] **sympy/functions/special/hyper.py:210** - # TODO should we check convergence conditions?
+- [ ] **sympy/functions/special/hyper.py:539** - # TODO should we check convergence conditions?
+- [ ] **sympy/functions/special/hyper.py:976** - # TODO this can be nicer
+- [ ] **sympy/functions/special/spherical_harmonics.py:150** - # TODO Add more simplififcation here
+- [ ] **sympy/functions/special/spherical_harmonics.py:179** - # TODO: Make sure n \in N
+- [ ] **sympy/functions/special/spherical_harmonics.py:180** - # TODO: Assert |m| <= n ortherwise we should return 0
+- [ ] **sympy/functions/special/spherical_harmonics.py:189** - # TODO: Make sure n \in N
+- [ ] **sympy/functions/special/spherical_harmonics.py:190** - # TODO: Assert |m| <= n ortherwise we should return 0
+- [ ] **sympy/functions/special/spherical_harmonics.py:197** - # TODO: Make sure theta \in R and phi \in R
+- [ ] **sympy/functions/special/spherical_harmonics.py:202** - # TODO: Handle deep and hints
+- [ ] **sympy/functions/special/zeta_functions.py:149** - # TODO should something be polarified here?
+- [ ] **sympy/functions/special/zeta_functions.py:178** - # TODO use minpoly instead of ad-hoc methods when issue 5888 is fixed
+- [ ] **sympy/functions/special/zeta_functions.py:180** - # TODO reference?
+- [ ] **sympy/geometry/ellipse.py:665** - # TODO: Replace solve with nonlinsolve, when nonlinsolve will be able to solve in real domain
+- [ ] **sympy/geometry/ellipse.py:931** - # TODO: Replace solve with solveset, when this line is tested
+- [ ] **sympy/geometry/ellipse.py:939** - # TODO: Replace solve with solveset, when these lines are tested
+- [ ] **sympy/geometry/ellipse.py:1302** - # TODO: Replace solve with solveset, when this line is tested
+- [ ] **sympy/geometry/plane.py:412** - # TODO: Replace solve with solveset, when this line is tested
+- [ ] **sympy/holonomic/holonomic.py:766** - # TODO: Implement this case
+- [ ] **sympy/holonomic/holonomic.py:902** - # TODO: support for singular initial condition
+- [ ] **sympy/integrals/heurisch.py:494** - # TODO: caching is significant factor for why permutations work at all. Change this.
+- [ ] **sympy/integrals/heurisch.py:690** - # TODO: Currently it's better to use symbolic expressions here instead
+- [ ] **sympy/integrals/heurisch.py:716** - # TODO: Non-polynomial expression. This should have been
+- [ ] **sympy/integrals/integrals.py:772** - # check for regularity conditions (TODO), see issue 4215
+- [ ] **sympy/integrals/intpoly.py:977** - #  TODO : This part is quite hacky. Should be made more robust with
+- [ ] **sympy/integrals/intpoly.py:978** - #  TODO : respect to symbol names and scalable w.r.t higher dimensions.
+- [ ] **sympy/integrals/laplace.py:859** - # TODO not implemented yet, but also not important
+- [ ] **sympy/integrals/manualintegrate.py:1582** - # todo: handle n < -1 case
+- [ ] **sympy/integrals/manualintegrate.py:2035** - # TODO: This is for future development, as currently
+- [ ] **sympy/integrals/meijerint.py:119** - # TODO this needs more polar_lift (c/f entry for exp)
+- [ ] **sympy/integrals/meijerint.py:164** - # TODO can do sin^n, sinh^n by expansion ... where?
+- [ ] **sympy/integrals/meijerint.py:170** - # TODO can do t + a. but can also do by expansion... (XXX not really)
+- [ ] **sympy/integrals/meijerint.py:187** - # TODO these only hold for positive p, and can be made more general
+- [ ] **sympy/integrals/meijerint.py:189** - # TODO also it would be nice to derive them recursively ...
+- [ ] **sympy/integrals/meijerint.py:202** - # TODO log(x)/(x+a) and log(x)/(x-1) can also be done. should they
+- [ ] **sympy/integrals/meijerint.py:204** - # TODO further formulae in this section seem obscure
+- [ ] **sympy/integrals/meijerint.py:207** - # TODO
+- [ ] **sympy/integrals/meijerint.py:230** - # TODO exp(-x)*erf(I*x) does not work
+- [ ] **sympy/integrals/meijerint.py:256** - # TODO all of the following should be derivable
+- [ ] **sympy/integrals/meijerint.py:282** - # TODO many more formulas. should all be derivable
+- [ ] **sympy/integrals/meijerint.py:286** - # TODO many more formulas. should all be derivable
+- [ ] **sympy/integrals/meijerint.py:524** - # TODO should this be a method of meijerg?
+- [ ] **sympy/integrals/meijerint.py:852** - # TODO altered cases 4-7
+- [ ] **sympy/integrals/meijerint.py:876** - # TODO This leaves only one case from the three listed by Prudnikov.
+- [ ] **sympy/integrals/meijerint.py:900** - # XXX TODO we should reduce order first
+- [ ] **sympy/integrals/meijerint.py:972** - # TODO should we try both?
+- [ ] **sympy/integrals/meijerint.py:988** - # XXX TODO this is a testing *nightmare*
+- [ ] **sympy/integrals/meijerint.py:1445** - # TODO
+- [ ] **sympy/integrals/prde.py:114** - # TODO: Merge this with the very similar special_denom() in rde.py
+- [ ] **sympy/integrals/prde.py:158** - # TODO: Add test
+- [ ] **sympy/integrals/prde.py:822** - # TODO: implement this
+- [ ] **sympy/integrals/prde.py:878** - # TODO: finish writing this and write tests
+- [ ] **sympy/integrals/prde.py:921** - # TODO: We treat this as 'no solution', until the structure
+- [ ] **sympy/integrals/prde.py:952** - # TODO: Write the full algorithm using the structure theorems.
+- [ ] **sympy/integrals/prde.py:957** - # TODO: This could be implemented more efficiently.
+- [ ] **sympy/integrals/prde.py:1035** - # TODO: What should really be done in this case?
+- [ ] **sympy/integrals/prde.py:1160** - # TODO: What should really be done in this case?
+- [ ] **sympy/integrals/prde.py:1185** - # TODO: But maybe we can tell if they're not rational, like
+- [ ] **sympy/integrals/prde.py:1266** - # TODO: finish writing this and write tests
+- [ ] **sympy/integrals/prde.py:1301** - # TODO: we can use more efficient residue reduction from ratint()
+- [ ] **sympy/integrals/rde.py:38** - # TODO: Add messages to NonElementaryIntegralException errors
+- [ ] **sympy/integrals/rde.py:205** - # TODO: finish writing this and write tests
+- [ ] **sympy/integrals/rde.py:286** - # TODO: finish writing this and write tests
+- [ ] **sympy/integrals/rde.py:510** - # TODO: better name for this function
+- [ ] **sympy/integrals/rde.py:653** - # TODO: Write a dummy function that does this idiom
+- [ ] **sympy/integrals/rde.py:713** - # TODO: Is this check necessary, and if so, what should it do if it fails?
+- [ ] **sympy/integrals/risch.py:333** - # TODO: This probably doesn't need to be completely recomputed at
+- [ ] **sympy/integrals/risch.py:366** - # TODO: Would there ever be any benefit from just
+- [ ] **sympy/integrals/risch.py:395** - # TODO: Just put it in self.Tfuncs
+- [ ] **sympy/integrals/risch.py:497** - # TODO: Add something to backsubs to put exp(const*p)
+- [ ] **sympy/integrals/risch.py:530** - # TODO: give algebraic dependence in error string
+- [ ] **sympy/integrals/risch.py:779** - # TODO: Rewrite algorithms below to use this (?)
+- [ ] **sympy/integrals/risch.py:781** - # TODO: Pass through information about why the integral was nonelementary,
+- [ ] **sympy/integrals/risch.py:798** - # TODO: This should go in densetools.py.
+- [ ] **sympy/integrals/risch.py:855** - # TODO: Use this on the final result.  That way, we can avoid answers like
+- [ ] **sympy/integrals/risch.py:1014** - # TODO: This algorithm appears to be faster in every case
+- [ ] **sympy/integrals/risch.py:1015** - # TODO: Verify this and splitfactor() for multiple extensions
+- [ ] **sympy/integrals/risch.py:1258** - # TODO also consider the complex roots which should
+- [ ] **sympy/integrals/risch.py:1288** - # TODO: Use log_to_atan() from rationaltools.py
+- [ ] **sympy/integrals/risch.py:1358** - # TODO: check what Lambda does with RootOf
+- [ ] **sympy/integrals/risch.py:1373** - # TODO: verify that this is correct for multiple extensions
+- [ ] **sympy/integrals/risch.py:1466** - # TODO: This does not do the right thing when b is False
+- [ ] **sympy/integrals/risch.py:1629** - # TODO: Integral from k?
+- [ ] **sympy/integrals/risch.py:1630** - # TODO: split out nonelementary integral
+- [ ] **sympy/integrals/risch.py:1699** - # TODO: This is useful in and of itself, because isinstance(result,
+- [ ] **sympy/integrals/tests/test_heurisch.py:217** - # TODO: it looks like this used to work just by coincindence and
+- [ ] **sympy/integrals/tests/test_heurisch.py:250** - # TODO: heurisch() is off by a constant: -3/4. Possibly different permutation
+- [ ] **sympy/integrals/tests/test_heurisch.py:349** - # TODO: convert the rest of PMINT tests:
+- [ ] **sympy/integrals/tests/test_integrals.py:329** - # TODO: Remove conds='none' below, let the assumption take care of it.
+- [ ] **sympy/integrals/tests/test_integrals.py:1142** - # TODO: Remove conds='none' below, let the assumption take care of it.
+- [ ] **sympy/integrals/tests/test_integrals.py:1331** - # TODO: How to test risch=False?
+- [ ] **sympy/integrals/tests/test_laplace.py:677** - # TODO sinh/cosh shifted come out a mess. also delayed trig is a mess
+- [ ] **sympy/integrals/tests/test_laplace.py:678** - # TODO should this simplify further?
+- [ ] **sympy/integrals/tests/test_laplace.py:693** - # TODO can we make erf(t) work?
+- [ ] **sympy/integrals/tests/test_laplace.py:732** - # TODO LT of Si, Shi, Chi is a mess ...
+- [ ] **sympy/integrals/tests/test_manual.py:113** - # todo: equals returns None
+- [ ] **sympy/integrals/tests/test_meijerint.py:149** - # TODO what simplifications should be done automatically?
+- [ ] **sympy/integrals/tests/test_meijerint.py:165** - # TODO it would be nice to test the condition
+- [ ] **sympy/integrals/tests/test_meijerint.py:245** - # TODO more orthogonality integrals
+- [ ] **sympy/integrals/tests/test_meijerint.py:257** - # TODO can do higher powers, but come out as high order ... should they be
+- [ ] **sympy/integrals/tests/test_meijerint.py:262** - # TODO more besseli when tables are extended or recursive mellin works
+- [ ] **sympy/integrals/tests/test_meijerint.py:273** - # TODO how does besselj(0, a*x)*besselj(0, b*x) work?
+- [ ] **sympy/integrals/tests/test_meijerint.py:274** - # TODO how does besselj(0, x)**2*besselj(1, x)**2 work?
+- [ ] **sympy/integrals/tests/test_meijerint.py:275** - # TODO sin(x)*besselj(0, x) etc come out a mess
+- [ ] **sympy/integrals/tests/test_meijerint.py:276** - # TODO can x*log(x)*besselj(0, x) be done?
+- [ ] **sympy/integrals/tests/test_meijerint.py:277** - # TODO how does besselj(1, x)*besselj(0, x+a) work?
+- [ ] **sympy/integrals/tests/test_meijerint.py:278** - # TODO more indefinite integrals when struve functions etc are implemented
+- [ ] **sympy/integrals/tests/test_meijerint.py:374** - # TODO gammasimp cannot prove that the factor is unity
+- [ ] **sympy/integrals/tests/test_meijerint.py:517** - # TODO conditions are a mess
+- [ ] **sympy/integrals/tests/test_meijerint.py:523** - # TODO gamma, rayleigh
+- [ ] **sympy/integrals/tests/test_meijerint.py:579** - # TODO are there other distributions supported on (-oo, oo) that we can do?
+- [ ] **sympy/integrals/tests/test_meijerint.py:658** - # TODO maybe simplify the inequalities? when the simplification
+- [ ] **sympy/integrals/tests/test_meijerint.py:668** - # TODO FT(besselj(0,x)) - conditions are messy (but for acceptable reasons)
+- [ ] **sympy/integrals/tests/test_prde.py:105** - # TODO: when bound_degree() can handle this, test degree bound from that too
+- [ ] **sympy/integrals/tests/test_prde.py:147** - # TODO: Add test for deg(b) <= 0 with b small
+- [ ] **sympy/integrals/tests/test_prde.py:262** - # TODO: Add more tests
+- [ ] **sympy/integrals/tests/test_prde.py:280** - # TODO: Add more tests, including ones with exponentials
+- [ ] **sympy/integrals/tests/test_rde.py:71** - # TODO: add more tests here
+- [ ] **sympy/integrals/tests/test_rde.py:114** - # TODO: Add test for when the degree bound becomes larger after limited_integrate
+- [ ] **sympy/integrals/tests/test_rde.py:115** - # TODO: Add test for db == da - 1 case
+- [ ] **sympy/integrals/tests/test_rde.py:118** - # TODO: Add tests
+- [ ] **sympy/integrals/tests/test_rde.py:119** - # TODO: Add test for when the degree becomes larger after parametric_log_deriv()
+- [ ] **sympy/integrals/tests/test_rde.py:179** - # TODO: Add more exp tests, including tests that require is_deriv_in_field()
+- [ ] **sympy/integrals/tests/test_rde.py:193** - # TODO: Add more primitive tests, including tests that require is_deriv_in_field()
+- [ ] **sympy/integrals/tests/test_rde.py:197** - # TODO: Add more tests for rischDE, including ones from the text
+- [ ] **sympy/integrals/tests/test_risch.py:235** - # TODO: Skip or make faster
+- [ ] **sympy/integrals/tests/test_risch.py:250** - # TODO: Add tests for integrate_hyperexponential() from the book
+- [ ] **sympy/integrals/tests/test_risch.py:374** - # TODO: Add a test where two different parts of the extension use a
+- [ ] **sympy/integrals/tests/test_transforms.py:80** - # TODO does not work with bneg, argument wrong. Needs changes to matching.
+- [ ] **sympy/integrals/tests/test_transforms.py:164** - # TODO we cannot currently do these (needs summation of 3F2(-1))
+- [ ] **sympy/integrals/tests/test_transforms.py:244** - # TODO we can't do any of these (delicate cancellation)
+- [ ] **sympy/integrals/tests/test_transforms.py:253** - # TODO bessely(a, x)*besselk(a, x) is a mess
+- [ ] **sympy/integrals/tests/test_transforms.py:264** - # TODO products of besselk are a mess
+- [ ] **sympy/integrals/tests/test_transforms.py:271** - # TODO exp(x/2)*besselk(a, x/2) [etc] cannot currently be done
+- [ ] **sympy/integrals/tests/test_transforms.py:272** - # TODO various strange products of special orders
+- [ ] **sympy/integrals/tests/test_transforms.py:385** - # TODO
+- [ ] **sympy/integrals/tests/test_transforms.py:419** - # TODO this comes out as an amazing mess, but simplifies nicely
+- [ ] **sympy/integrals/tests/test_transforms.py:435** - # TODO this can be further simplified!
+- [ ] **sympy/integrals/tests/test_transforms.py:443** - # TODO more
+- [ ] **sympy/integrals/tests/test_transforms.py:465** - # TODO for this to work with real a, need to expand abs(a*x) to abs(a)*abs(x)
+- [ ] **sympy/integrals/tests/test_transforms.py:478** - # TODO IFT is a *mess*
+- [ ] **sympy/integrals/tests/test_transforms.py:480** - # TODO IFT
+- [ ] **sympy/integrals/tests/test_transforms.py:491** - # TODO IFT without factoring comes out as meijer g
+- [ ] **sympy/integrals/tests/test_transforms.py:501** - # TODO IFT (comes out as meijer G)
+- [ ] **sympy/integrals/tests/test_transforms.py:503** - # TODO besselj(n, x), n an integer > 0 actually can be done...
+- [ ] **sympy/integrals/tests/test_transforms.py:505** - # TODO are there other common transforms (no distributions!)?
+- [ ] **sympy/integrals/tests/test_trigonometry.py:32** - # TODO: remove conds='none' below. For this to work we would have to rule
+- [ ] **sympy/integrals/transforms.py:201** - # TODO handle derivatives etc
+- [ ] **sympy/integrals/transforms.py:745** - # TODO
+- [ ] **sympy/integrals/trigonometry.py:5** - # TODO sin(a*x)*cos(b*x) -> sin((a+b)x) + sin((a-b)x) ?
+- [ ] **sympy/interactive/tests/test_ipython.py:10** - # TODO: The code below could be made more granular with something like:
+- [ ] **sympy/interactive/tests/test_ipython.py:74** - # TODO: How can we test that the output of a SyntaxError is the original
+- [ ] **sympy/matrices/expressions/hadamard.py:165** - # TODO Implement algorithm for rewriting Hadamard product as diagonal matrix
+- [ ] **sympy/matrices/expressions/tests/test_derivatives.py:52** - # TODO: this is commented because it slows down the tests.
+- [ ] **sympy/matrices/expressions/tests/test_derivatives.py:105** - # TODO: find a way to represent a four-dimensional zero-array:
+- [ ] **sympy/matrices/expressions/tests/test_derivatives.py:225** - # TODO: TensorProduct is not supported
+- [ ] **sympy/matrices/expressions/tests/test_derivatives.py:292** - # TODO: no support for TensorProduct.
+- [ ] **sympy/matrices/expressions/tests/test_derivatives.py:407** - # TODO: restore this result (currently returning the transpose):
+- [ ] **sympy/matrices/expressions/tests/test_derivatives.py:416** - # TODO: restore (currently returning the transpose):
+- [ ] **sympy/matrices/expressions/tests/test_derivatives.py:435** - # TODO: not implemented
+- [ ] **sympy/matrices/expressions/tests/test_derivatives.py:444** - # TODO: wrong
+- [ ] **sympy/matrices/expressions/tests/test_derivatives.py:448** - # TODO: wrong
+- [ ] **sympy/matrices/tests/test_commonmatrix.py:1086** - # TODO: currently not working as ``_MinimalMatrix`` cannot be sympified:
+- [ ] **sympy/parsing/autolev/_listener_autolev_antlr.py:796** - # TODO: Currently only works with symbols. Make it work for dynamicsymbols.
+- [ ] **sympy/parsing/autolev/_listener_autolev_antlr.py:1269** - # TODO** Parse block matrices
+- [ ] **sympy/parsing/c/c_parser.py:519** - #TODO: No string type in AST
+- [ ] **sympy/parsing/fortran/fortran_parser.py:102** - # TODO: Arithmetic Assignment
+- [ ] **sympy/parsing/fortran/fortran_parser.py:151** - # TODO: Integer Binary Operations
+- [ ] **sympy/parsing/fortran/fortran_parser.py:239** - # TODO:Numbers when the LFortran ASR is updated
+- [ ] **sympy/parsing/fortran/fortran_parser.py:257** - # TODO: Return statement, variable declaration
+- [ ] **sympy/parsing/latex/lark/transformer.py:539** - # TODO: ANTLR refers to ISO 80000-2:2019. should we keep base 10 or base 2?
+- [ ] **sympy/physics/mechanics/kane.py:631** - # TODO : Remove `new_method` after 1.1 has been released.
+- [ ] **sympy/physics/mechanics/tests/test_particle.py:55** - # TODO make the result not be system-dependent
+- [ ] **sympy/physics/optics/gaussopt.py:526** - #TODO A class Complex may be implemented. The BeamParameter may
+- [ ] **sympy/physics/optics/gaussopt.py:885** - #TODO add the other possible arguments
+- [ ] **sympy/physics/optics/gaussopt.py:906** - #TODO
+- [ ] **sympy/physics/optics/gaussopt.py:911** - #TODO
+- [ ] **sympy/physics/quantum/cg.py:1** - #TODO:
+- [ ] **sympy/physics/quantum/cg.py:486** - #TODO: Improve simplification method
+- [ ] **sympy/physics/quantum/cg.py:675** - # TODO: Check for symmetries
+- [ ] **sympy/physics/quantum/gate.py:242** - # TODO: This can be optimized to reduce the number of Qubit
+- [ ] **sympy/physics/quantum/matrixcache.py:78** - # TODO: explore different sparse formats. But sparse.kron will use
+- [ ] **sympy/physics/quantum/matrixutils.py:141** - # TODO: Move this into sympy.matricies.
+- [ ] **sympy/physics/quantum/operator.py:432** - # TODO: make sure the hilbert spaces of the bra and ket are
+- [ ] **sympy/physics/quantum/operator.py:495** - # TODO if operands are tensorproducts this may be will be handled
+- [ ] **sympy/physics/quantum/qapply.py:84** - # TODO: don't expand the scalars in front of each Mul.
+- [ ] **sympy/physics/quantum/qapply.py:200** - # TODO: I may need to expand before returning the final result.
+- [ ] **sympy/physics/quantum/represent.py:417** - #TODO: Add support for sets of operators
+- [ ] **sympy/physics/quantum/spin.py:145** - # TODO: add methods for uncoupling operators
+- [ ] **sympy/physics/quantum/spin.py:157** - # TODO: move this to qapply_Mul
+- [ ] **sympy/physics/quantum/spin.py:165** - #TODO: use options to use different j values
+- [ ] **sympy/physics/quantum/spin.py:616** - # TODO: move evaluation up to represent function/implement elsewhere
+- [ ] **sympy/physics/quantum/spin.py:1017** - # TODO: better way to get angles of rotation
+- [ ] **sympy/physics/quantum/spin.py:1487** - # TODO: Need hilbert space fix, see issue 5732
+- [ ] **sympy/physics/quantum/tensorproduct.py:139** - # TODO: disallow nested TensorProducts.
+- [ ] **sympy/physics/quantum/tensorproduct.py:316** - # TODO: This won't work with Muls that have other composites of
+- [ ] **sympy/physics/quantum/tensorproduct.py:318** - # TODO: This only works for the equivalent of single Qbit gates.
+- [ ] **sympy/physics/quantum/tensorproduct.py:340** - # TODO: check the hilbert spaces of next and current here.
+- [ ] **sympy/physics/quantum/tests/test_cartesian.py:104** - # TODO: Add tests for representations
+- [ ] **sympy/physics/quantum/tests/test_density.py:269** - #TODO: test for invalid arguments
+- [ ] **sympy/physics/quantum/tests/test_printing.py:678** - # TODO: Fix non-unicode pretty printing
+- [ ] **sympy/physics/quantum/tests/test_trace.py:82** - #TODO: needed while testing reduced density operations, etc.
+- [ ] **sympy/physics/quantum/trace.py:189** - # TODO : improve this implementation
+- [ ] **sympy/physics/quantum/trace.py:192** - #TODO: Review if the permute method is needed
+- [ ] **sympy/physics/units/dimensions.py:351** - # TODO: should this raise a warning?
+- [ ] **sympy/physics/units/dimensions.py:522** - #TODO: the inversion will fail if the system is inconsistent, for
+- [ ] **sympy/physics/units/tests/test_quantities.py:52** - # TODO: eventually support this kind of conversion:
+- [ ] **sympy/physics/units/tests/test_quantities.py:140** - # TODO: eventually add this:
+- [ ] **sympy/physics/units/tests/test_quantities.py:144** - # TODO: eventually add this:
+- [ ] **sympy/physics/units/tests/test_quantities.py:212** - # TODO: decide whether to allow such expression in the future
+- [ ] **sympy/physics/units/tests/test_quantities.py:233** - # TODO: Pow only support structural equality:
+- [ ] **sympy/physics/units/tests/test_quantities.py:250** - # TODO: need better simplification routine:
+- [ ] **sympy/physics/units/tests/test_quantities.py:255** - # TODO: need a better way to simplify expressions containing units:
+- [ ] **sympy/physics/units/tests/test_quantities.py:259** - # TODO: fix this, it should give `m` without `Abs`
+- [ ] **sympy/physics/vector/tests/test_printing.py:47** - # TODO : The unit vectors should print with subscripts but they just
+- [ ] **sympy/physics/vector/tests/test_printing.py:50** - # TODO : The pretty print division does not print correctly here:
+- [ ] **sympy/physics/vector/vector.py:764** - # TODO : Circular dependency if imported at top. Should move
+- [ ] **sympy/plotting/backends/matplotlibbackend/matplotlib.py:240** - # TODO The 3D stuff
+- [ ] **sympy/plotting/backends/matplotlibbackend/matplotlib.py:304** - #TODO after fixing https://github.com/ipython/ipython/issues/1255
+- [ ] **sympy/plotting/experimental_lambdify.py:78** - #TODO debugging output
+- [ ] **sympy/plotting/experimental_lambdify.py:403** - #TODO
+- [ ] **sympy/plotting/plot.py:117** - # TODO: _process_piecewise check goes here
+- [ ] **sympy/plotting/plot.py:193** - # TODO: Add color arrays for plots.
+- [ ] **sympy/plotting/plot.py:194** - # TODO: Add more plotting options for 3d plots.
+- [ ] **sympy/plotting/plot.py:195** - # TODO: Adaptive sampling for 3D plots.
+- [ ] **sympy/plotting/series.py:381** - # TODO: set cse=True once this issue is solved:
+- [ ] **sympy/plotting/series.py:1146** - # TODO: for now, I assume that numpy functions are going to succeed
+- [ ] **sympy/plotting/series.py:1156** - # TODO: what if points[k][idx]==e or points[k][idx+1]==e?
+- [ ] **sympy/plotting/series.py:1774** - # TODO: remove this
+- [ ] **sympy/plotting/series.py:1790** - # TODO: remove this
+- [ ] **sympy/plotting/series.py:1871** - # TODO: remove this
+- [ ] **sympy/plotting/series.py:1972** - # TODO: remove this
+- [ ] **sympy/plotting/series.py:2094** - # TODO: remove this
+- [ ] **sympy/plotting/utils.py:159** - # TODO: prange check goes here
+- [ ] **sympy/polys/agca/ideals.py:102** - # TODO more
+- [ ] **sympy/polys/agca/modules.py:32** - # TODO
+- [ ] **sympy/polys/agca/modules.py:1281** - # TODO this can be done more efficiently
+- [ ] **sympy/polys/distributedmodules.py:515** - # TODO better data structure!!!
+- [ ] **sympy/polys/distributedmodules.py:675** - # TODO apply the product criterion?
+- [ ] **sympy/polys/distributedmodules.py:683** - # TODO mergesort?
+- [ ] **sympy/polys/distributedmodules.py:726** - # (TODO again, better data structures)
+- [ ] **sympy/polys/domains/domain.py:442** - # TODO: implement this in from_ methods
+- [ ] **sympy/polys/domains/domain.py:451** - # TODO: remove this branch
+- [ ] **sympy/polys/domains/fractionfield.py:34** - # TODO: remove this
+- [ ] **sympy/polys/domains/polynomialring.py:40** - # TODO: remove this
+- [ ] **sympy/polys/domains/quotientring.py:9** - # TODO
+- [ ] **sympy/polys/domains/quotientring.py:142** - # TODO optionally disable reduction?
+- [ ] **sympy/polys/heuristicgcd.py:124** - # TODO: don't expose poly repr implementation details
+- [ ] **sympy/polys/matrices/_dfm.py:23** - # TODO:
+- [ ] **sympy/polys/matrices/_dfm.py:605** - # TODO: Implement similar algorithms for DDM and SDM.
+- [ ] **sympy/polys/matrices/dense.py:173** - # TODO: Use a nontrivial pivoting strategy to control intermediate
+- [ ] **sympy/polys/matrices/dense.py:321** - # TODO: Use a non-trivial pivoting strategy. Even just row swapping makes a
+- [ ] **sympy/polys/matrices/normalforms.py:11** - # TODO (future work):
+- [ ] **sympy/polys/matrices/rref.py:256** - # TODO: Add partial pivot support to the sparse implementations.
+- [ ] **sympy/polys/modulargcd.py:795** - # TODO: to improve performance, choose the main variable here
+- [ ] **sympy/polys/modulargcd.py:2128** - # TODO: add support for algebraic function fields
+- [ ] **sympy/polys/numberfields/basis.py:216** - # TODO:
+- [ ] **sympy/polys/numberfields/modules.py:1839** - # TODO:
+- [ ] **sympy/polys/numberfields/primes.py:678** - # TODO (future work):
+- [ ] **sympy/polys/polyroots.py:761** - # TODO: This is fragile. Figure out how to make this independent of construct_domain().
+- [ ] **sympy/polys/polyutils.py:376** - # TODO: Integrate this into expand() itself
+- [ ] **sympy/polys/ring_series.py:516** - # TODO add check that it is a unit
+- [ ] **sympy/polys/ring_series.py:677** - # TODO: Add this when it is documented in Sphinx
+- [ ] **sympy/polys/ring_series.py:1876** - # TODO Use _parallel_dict_from_expr instead of sring as sring is
+- [ ] **sympy/polys/ring_series.py:1877** - # inefficient. For details, read the todo in sring.
+- [ ] **sympy/polys/rings.py:162** - # TODO: rewrite this so that it doesn't use expand() (see poly()).
+- [ ] **sympy/polys/rings.py:453** - # TODO: should AlgebraicField be a Composite domain?
+- [ ] **sympy/polys/rings.py:1212** - # TODO: use an actual density measure
+- [ ] **sympy/polys/rings.py:1379** - # TODO: use // (__floordiv__) for exquo()?
+- [ ] **sympy/polys/rings.py:2192** - # TODO: don't use dense representation (port PRS algorithms)
+- [ ] **sympy/polys/rings.py:2961** - # TODO: following methods should point to polynomial
+- [ ] **sympy/polys/tests/test_distributedmodules.py:50** - # TODO test to_dict?
+- [ ] **sympy/polys/tests/test_heuristicgcd.py:53** - # TODO: assert heugcd(f, f.diff(x))[0] == g
+- [ ] **sympy/printing/latex.py:235** - # TODO: merge this with the above, which requires a lot of test changes
+- [ ] **sympy/printing/latex.py:1171** - # TODO should exp_polar be printed differently?
+- [ ] **sympy/printing/latex.py:2557** - # TODO incorporate order
+- [ ] **sympy/printing/latex.py:2749** - # TODO: This expression is potentially confusing,
+- [ ] **sympy/printing/latex.py:2757** - # TODO nicer fractions for few generators...
+- [ ] **sympy/printing/latex.py:2774** - # TODO nicer fractions for few generators...
+- [ ] **sympy/printing/latex.py:2830** - # TODO: Handle indices
+- [ ] **sympy/printing/llvmjitcode.py:95** - # TODO - assumes all called functions take one double precision argument.
+- [ ] **sympy/printing/mathml.py:1648** - # TODO: copy-pasted from _print_Function: can we do better?
+- [ ] **sympy/printing/pretty/pretty.py:1574** - # TODO should exp_polar be printed differently?
+- [ ] **sympy/printing/pretty/pretty.py:1910** - #TODO: Move this code to prettyForm
+- [ ] **sympy/printing/pretty/pretty.py:2239** - # TODO: the stuff to the left of the | and the stuff to the right of
+- [ ] **sympy/printing/pretty/pretty.py:2602** - # TODO: copy-pasted from _print_Function: can we do better?
+- [ ] **sympy/printing/pretty/pretty.py:2671** - # TODO incorporate order
+- [ ] **sympy/printing/pretty/pretty.py:2808** - #TODO: Handle indices
+- [ ] **sympy/printing/pretty/pretty_symbology.py:201** - # TODO: Make brackets adjust to height of contents
+- [ ] **sympy/printing/pretty/pretty_symbology.py:326** - # TODO robustify when no unicodedat available
+- [ ] **sympy/printing/pretty/tests/test_pretty.py:4575** - # TODO: The "x in N" parts below should be centered independently of the
+- [ ] **sympy/printing/pretty/tests/test_pretty.py:7256** - # TODO: add support for ASCII pretty.
+- [ ] **sympy/printing/pretty/tests/test_pretty.py:7620** - # TODO: TBD polylog(s - 1, z)
+- [ ] **sympy/printing/smtlib.py:189** - # todo: Sympy does not support quantifiers yet as of 2022, but quantifiers can be handy in SMT.
+- [ ] **sympy/printing/str.py:964** - #TODO : Handle indices
+- [ ] **sympy/printing/tensorflow.py:105** - # TODO: a better class structure would avoid this mess:
+- [ ] **sympy/printing/tensorflow.py:200** - # TODO: is this necessary?
+- [ ] **sympy/printing/tests/test_aesaracode.py:180** - # TODO - this is currently not checked but should be implemented
+- [ ] **sympy/printing/tests/test_aesaracode.py:234** - # TODO - matrix broadcasting?
+- [ ] **sympy/printing/tests/test_aesaracode.py:607** - # assert theq(aesara_code_(sy.Ne(x, y)), aet.neq(xt, yt))  # TODO - implement
+- [ ] **sympy/printing/tests/test_latex.py:2065** - #TODO: Handle indices
+- [ ] **sympy/printing/tests/test_repr.py:93** - # TODO more tests
+- [ ] **sympy/printing/tests/test_smtlib.py:216** - # todo: implement re-write, currently does '(+ x (* -1 y))' instead
+- [ ] **sympy/printing/tests/test_smtlib.py:457** - # todo: make smtlib_code support arrays
+- [ ] **sympy/printing/tests/test_smtlib.py:509** - # todo: make smtlib_code support arrays / matrices ?
+- [ ] **sympy/printing/tests/test_theanocode.py:172** - # TODO - this is currently not checked but should be implemented
+- [ ] **sympy/printing/tests/test_theanocode.py:226** - # TODO - matrix broadcasting?
+- [ ] **sympy/printing/tests/test_theanocode.py:599** - # assert theq(theano_code_(sy.Ne(x, y)), tt.neq(xt, yt))  # TODO - implement
+- [ ] **sympy/series/gruntz.py:670** - # TODO this should not be necessary
+- [ ] **sympy/series/tests/test_formal.py:441** - # TODO: rsolve needs improvement
+- [ ] **sympy/series/tests/test_gruntz.py:148** - # TODO zeta function series
+- [ ] **sympy/series/tests/test_gruntz.py:152** - # TODO 8.35 - 8.37 (bessel, max-min)
+- [ ] **sympy/series/tests/test_order.py:160** - # TODO : A better output for Order(log(x) + 1/log(x))
+- [ ] **sympy/sets/handlers/functions.py:38** - # TODO: handle functions with infinitely many solutions (eg, sin, tan)
+- [ ] **sympy/sets/handlers/functions.py:39** - # TODO: handle multivariate functions
+- [ ] **sympy/sets/handlers/intersection.py:371** - # TODO: Design a technique to handle multiple-inverse
+- [ ] **sympy/sets/handlers/mul.py:34** - # TODO: some intervals containing 0 and oo will fail as 0*oo returns nan.
+- [ ] **sympy/sets/handlers/mul.py:41** - # TODO: handle symbolic intervals
+- [ ] **sympy/sets/handlers/power.py:46** - # TODO: handle unevaluated condition.
+- [ ] **sympy/sets/handlers/power.py:49** - # TODO: `s2 > s1` could be unevaluated.
+- [ ] **sympy/sets/handlers/power.py:85** - # TODO: add logic for open intervals?
+- [ ] **sympy/sets/setexpr.py:84** - # TODO: this could be implemented straight into `imageset`:
+- [ ] **sympy/sets/sets.py:2520** - # TODO: check subsets (`func` in `setv`)
+- [ ] **sympy/sets/sets.py:2523** - # TODO: support more
+- [ ] **sympy/sets/tests/test_setexpr.py:29** - # TODO: add support for more functions in the future:
+- [ ] **sympy/sets/tests/test_setexpr.py:206** - # TODO: some expressions cannot be calculated due to bugs (currently
+- [ ] **sympy/simplify/gammasimp.py:397** - # TODO is there a better heuristic?
+- [ ] **sympy/simplify/hyperexpand.py:50** - #   TODO work this out in detail.
+- [ ] **sympy/simplify/hyperexpand.py:86** - # TODO see if this can work as Mod(x, 1); this will require
+- [ ] **sympy/simplify/hyperexpand.py:253** - # TODO branching
+- [ ] **sympy/simplify/hyperexpand.py:736** - # TODO with symbolic parameters, it could be advantageous
+- [ ] **sympy/simplify/hyperexpand.py:1947** - # TODO tons of more formulae
+- [ ] **sympy/simplify/hyperexpand.py:1991** - # TODO
+- [ ] **sympy/simplify/hyperexpand.py:2116** - # TODO for now, we use the following simple heuristic: inverse-shift
+- [ ] **sympy/simplify/hyperexpand.py:2245** - # TODO the following would be possible:
+- [ ] **sympy/simplify/hyperexpand.py:2250** - # TODO Also, we tend to create combinations of gamma functions that can be
+- [ ] **sympy/simplify/hyperexpand.py:2443** - # TODO it would be helpful to give conditions under which the integral
+- [ ] **sympy/simplify/simplify.py:631** - # TODO: Apply different strategies, considering expression pattern:
+- [ ] **sympy/simplify/simplify.py:1073** - # TODO: see if x*log(a)+x*log(a)*log(b) -> x*log(a)*(1+log(b))?
+- [ ] **sympy/simplify/simplify.py:1233** - # TODO
+- [ ] **sympy/simplify/tests/test_hyperexpand.py:116** - # TODO [a+1, aRational(-1, 2)], [2*a]
+- [ ] **sympy/simplify/tests/test_hyperexpand.py:130** - # TODO hyperexpand(hyper([a], [2*a + 1], z))
+- [ ] **sympy/simplify/tests/test_hyperexpand.py:131** - # TODO [S.Half, a], [Rational(3, 2), a+1]
+- [ ] **sympy/simplify/tests/test_hyperexpand.py:135** - # TODO [a], [a - S.Half, 2*a]
+- [ ] **sympy/simplify/tests/test_hyperexpand.py:946** - # TODO polys
+- [ ] **sympy/simplify/tests/test_hyperexpand.py:1008** - # TODO LOTS more
+- [ ] **sympy/simplify/tests/test_hyperexpand.py:1036** - # TODO LOTS more
+- [ ] **sympy/simplify/trigsimp.py:121** - # TODO
+- [ ] **sympy/solvers/bivariate.py:34** - # TODO it would be good to pick the smallest divisible power
+- [ ] **sympy/solvers/diophantine/diophantine.py:2677** - # TODO: pre-simplification: Not necessary but may simplify
+- [ ] **sympy/solvers/diophantine/diophantine.py:3910** - # TODO: Fall back to diop_DN when k = 2
+- [ ] **sympy/solvers/ode/ode.py:800** - # TODO: Use solveset here
+- [ ] **sympy/solvers/ode/ode.py:1075** - # TODO: Hint first order series should match only if d/e is analytic.
+- [ ] **sympy/solvers/ode/ode.py:1783** - # TODO: if two solutions are solved for f(x), we still want to be
+- [ ] **sympy/solvers/ode/single.py:204** - # TODO: Add methods that can be used by many ODE solvers:
+- [ ] **sympy/solvers/pde.py:175** - # TODO : 'best' hint should be implemented when adequate
+- [ ] **sympy/solvers/pde.py:289** - # TODO : For now pde.py uses support offered by the ode_order function
+- [ ] **sympy/solvers/pde.py:541** - # TODO : For now homogeneous first order linear PDE's having
+- [ ] **sympy/solvers/pde.py:648** - # TODO : For now homogeneous first order linear PDE's having
+- [ ] **sympy/solvers/solvers.py:368** - # TODO: improve solution testing
+- [ ] **sympy/solvers/solvers.py:2902** - # TODO: option for calculating J numerically
+- [ ] **sympy/solvers/solveset.py:509** - # TODO : We should not blindly recurse through all args of arbitrary expressions like this
+- [ ] **sympy/solvers/solveset.py:737** - # todo: This solver can be extended to hyperbolics if the
+- [ ] **sympy/solvers/solveset.py:743** - # todo: The pre-processing below (extraction of numerators, denominators,
+- [ ] **sympy/solvers/solveset.py:1435** - # TODO Case: A-> function of symbol, can be extended here
+- [ ] **sympy/solvers/tests/test_polysys.py:173** - # TODO: does this really have to be so complicated?!
+- [ ] **sympy/solvers/tests/test_solvers.py:1714** - # TODO: Investigate why currently solution [0] is preferred over [1].
+- [ ] **sympy/solvers/tests/test_solveset.py:248** - # TODO: Is the above solution set definitely complete?
+- [ ] **sympy/solvers/tests/test_solveset.py:1657** - # TODO: add more simple testcases when solveset returns
+- [ ] **sympy/stats/drv.py:152** - # TODO: support discrete sets with non integer stepsizes
+- [ ] **sympy/stats/frv.py:460** - #TODO: Implement the mechanism for handling queries for symbolic sized distributions.
+- [ ] **sympy/stats/joint_rv.py:415** - #TODO: Modify to support integration
+- [ ] **sympy/stats/joint_rv_types.py:134** - #TODO: Add support for sets provided by the user
+- [ ] **sympy/stats/matrix_distributions.py:114** - ### TODO: Add tests after adding matrix distributions in numpy_rv_map
+- [ ] **sympy/stats/random_matrix_models.py:249** - # TODO : Add support for Lie groups(as extensions of sympy.diffgeom)
+- [ ] **sympy/stats/rv.py:1317** - # TODO : Remove when lambdify accepts 'pymc' as module
+- [ ] **sympy/stats/rv.py:1334** - # TODO: Replace the try-except block with only given_fn(*args)
+- [ ] **sympy/stats/rv.py:1360** - # TODO: Replace the try-except block with only given_fn(*args)
+- [ ] **sympy/stats/rv.py:1377** - # TODO: Replace the try-except block with only fn(*args)
+- [ ] **sympy/stats/rv.py:1604** - # TODO: do this for drv.py and frv.py if necessary.
+- [ ] **sympy/stats/rv.py:1605** - # TODO: add more distributions here if there are more
+- [ ] **sympy/stats/tests/test_compound_rv.py:90** - ### TODO: Restore tests once warnings are removed
+- [ ] **sympy/stats/tests/test_continuous_rv.py:677** - ### TODO: Restore tests once warnings are removed
+- [ ] **sympy/stats/tests/test_continuous_rv.py:1348** - ### TODO: Restore tests once warnings are removed
+- [ ] **sympy/stats/tests/test_continuous_rv.py:1358** - ### TODO: Restore tests once warnings are removed
+- [ ] **sympy/stats/tests/test_finite_rv.py:68** - # TODO: Make iid method!
+- [ ] **sympy/stats/tests/test_mix.py:80** - ### TODO: Restore tests once warnings are removed
+- [ ] **sympy/stats/tests/test_stochastic_process.py:77** - # TODO: Restore tests once warnings are removed
+- [ ] **sympy/stats/tests/test_stochastic_process.py:109** - ### TODO: Restore tests once warnings are removed
+- [ ] **sympy/stats/tests/test_stochastic_process.py:408** - ### TODO: Restore tests once warnings are removed
+- [ ] **sympy/tensor/array/array_derivatives.py:91** - # TODO: this could be done with multiple-dispatching:
+- [ ] **sympy/tensor/array/expressions/array_expressions.py:603** - # TODO: swap args positions in order to simplify the expression:
+- [ ] **sympy/tensor/array/expressions/array_expressions.py:604** - # TODO: this should be in a function
+- [ ] **sympy/tensor/array/expressions/array_expressions.py:639** - # TODO: function in order to permute the args:
+- [ ] **sympy/tensor/array/expressions/array_expressions.py:840** - # TODO: add API for total rank and cumulative rank:
+- [ ] **sympy/tensor/array/expressions/array_expressions.py:1261** - # TODO: add API for total rank and cumulative rank:
+- [ ] **sympy/tensor/array/expressions/array_expressions.py:1388** - # TODO: check that `expr` has `.subranks`:
+- [ ] **sympy/tensor/array/expressions/from_array_to_matrix.py:123** - # TODO: is this break necessary?
+- [ ] **sympy/tensor/array/expressions/from_array_to_matrix.py:296** - # TODO: this assumes that all arguments are matrices, it may not be the case:
+- [ ] **sympy/tensor/array/expressions/from_array_to_matrix.py:447** - # TODO: check if subremoved should be permuted as well...
+- [ ] **sympy/tensor/array/expressions/from_array_to_matrix.py:541** - # TODO: move this to ElementwiseApplyFunction
+- [ ] **sympy/tensor/array/expressions/from_indexed_to_array.py:113** - # TODO: check that Kronecker delta is only contracted to one other element:
+- [ ] **sympy/tensor/array/expressions/tests/test_array_expressions.py:50** - # TODO: not yet supported:
+- [ ] **sympy/tensor/array/expressions/tests/test_array_expressions.py:54** - # TODO: not yet supported:
+- [ ] **sympy/tensor/array/expressions/tests/test_array_expressions.py:445** - # TODO: reverse operation starting with `PermuteDims` and getting down to `bb`...
+- [ ] **sympy/tensor/array/expressions/tests/test_convert_array_to_matrix.py:189** - # TODO: this is returning a wrong result:
+- [ ] **sympy/tensor/array/ndim_array.py:566** - # TODO: add checks for dimensions for `value`?
+- [ ] **sympy/tensor/indexed.py:89** - #   TODO:  (some ideas for improvement)
+- [ ] **sympy/tensor/tensor.py:2197** - # TODO: add possibility of metric after (spinors)
+- [ ] **sympy/tensor/tensor.py:2557** - # TODO: what is the part which is not a coeff?
+- [ ] **sympy/tensor/tensor.py:2947** - # TODO: this could be optimized by only swapping the indices
+- [ ] **sympy/tensor/tensor.py:3002** - # TODO: put this into TensExpr?
+- [ ] **sympy/tensor/tensor.py:3008** - # TODO: put this into TensExpr?
+- [ ] **sympy/tensor/tensor.py:3024** - # TODO: inefficient, this should be done at root level only:
+- [ ] **sympy/tensor/tensor.py:3067** - # TODO: check data compatibility with properties of tensor.
+- [ ] **sympy/tensor/tensor.py:3143** - # TODO: replace .args[0] with .name:
+- [ ] **sympy/tensor/tensor.py:3158** - # TODO: if there is no metric present, the derivative should be zero?
+- [ ] **sympy/tensor/tensor.py:3453** - # TODO: this method should be private
+- [ ] **sympy/tensor/tensor.py:3454** - # TODO: should this method be renamed _from_components_free_dum ?
+- [ ] **sympy/tensor/tensor.py:3629** - # TODO: temporary solution, in the future this should be linked to
+- [ ] **sympy/tensor/tensor.py:4151** - # TODO: inherit dummies from expr
+- [ ] **sympy/tensor/tensor.py:4174** - # TODO: can be improved:
+- [ ] **sympy/tensor/tensor.py:4745** - # TODO: add a dum_to_components_map ?
+- [ ] **sympy/tensor/tests/test_tensor.py:479** - # TODO: add check for *get_symmetric_group_sgs(0)
+- [ ] **sympy/testing/runtests.py:1923** - # TODO parse integers as well ?
+- [ ] **sympy/testing/runtests.py:2010** - # TODO: Should these be protected?
+- [ ] **sympy/utilities/tests/test_pickling.py:376** - # TODO: fix pickling of Options class (see GroebnerBasis._options)
+- [ ] **sympy/utilities/tests/test_pickling.py:403** - # TODO: Py3k
+- [ ] **sympy/utilities/tests/test_pickling.py:414** - # TODO: AssertionError: assert id(obj) not in self.memo
+- [ ] **sympy/utilities/tests/test_pickling.py:418** - # TODO: AssertionError: assert id(obj) not in self.memo
+- [ ] **sympy/utilities/tests/test_pickling.py:432** - # TODO: fix pickling of ModularInteger
+- [ ] **sympy/utilities/tests/test_pickling.py:438** - # TODO: fix pickling of RealElement
+- [ ] **sympy/utilities/tests/test_pickling.py:442** - # TODO: fix pickling of ComplexElement
+- [ ] **sympy/utilities/tests/test_pickling.py:451** - # TODO: fix pickling of ModularInteger
+- [ ] **sympy/utilities/tests/test_pickling.py:466** - # TODO: fix pickling of ModularInteger
+- [ ] **sympy/utilities/tests/test_pickling.py:483** - # TODO: fix pickling of RealElement
+- [ ] **sympy/utilities/tests/test_pickling.py:487** - # TODO: fix pickling of ComplexElement
+- [ ] **sympy/utilities/tests/test_pickling.py:494** - # TODO: AssertionError
+- [ ] **sympy/utilities/tests/test_pickling.py:498** - # TODO: AttributeError: 'PolyElement' object has no attribute 'ring'
+- [ ] **sympy/utilities/tests/test_pickling.py:520** - # TODO: Argh, Python is so naive. No lambdas nor inner function support in
+- [ ] **sympy/utilities/tests/test_pickling.py:553** - # TODO: TypeError: __init__() takes at least 3 arguments (1 given)
+- [ ] **sympy/utilities/tests/test_pickling.py:557** - # TODO: TypeError: can't pickle instancemethod objects
+- [ ] **sympy/utilities/tests/test_pickling.py:606** - # TODO: PicklingError: Can't pickle <function <lambda> at 0x38578c0>: it's not found as __main__.<lambda>
+- [ ] **sympy/utilities/tests/test_pickling.py:616** - # TODO: TypeError: __init__() takes at least 3 arguments (1 given)
+- [ ] **sympy/utilities/tests/test_pickling.py:629** - # TODO: fix pickling of `symbols' flag
+- [ ] **sympy/utilities/tests/test_pickling.py:633** - # TODO: def test_pickling_polys_rootisolation():
+- [ ] **sympy/utilities/tests/test_wester.py:922** - # TODO: Replace solve with solveset, as of now test fails for solveset
+- [ ] **sympy/utilities/tests/test_wester.py:958** - # TODO: Replace solve with solveset when it gives Lambert solution
+- [ ] **sympy/utilities/tests/test_wester.py:968** - # TODO: x = [-1, 2*(+/-asinh(1)*I + n*pi}, 3*(pi/6 + n*pi/3)]
+- [ ] **sympy/utilities/tests/test_wester.py:969** - # TODO: Replace solve with solveset, as of now test fails for solveset
+- [ ] **sympy/utilities/tests/test_wester.py:1016** - # TODO: Replace solve with solveset, as of now test fails for solveset
+- [ ] **sympy/utilities/tests/test_wester.py:1034** - # TODO: Replace solve with solveset, as of now test fails for solveset
+- [ ] **sympy/utilities/tests/test_wester.py:1040** - # TODO: Replace solve with solveset, as of now test fails for solveset
+- [ ] **sympy/utilities/tests/test_wester.py:1049** - # TODO: Replace solve with solveset, as of now test fails for solveset
+- [ ] **sympy/utilities/tests/test_wester.py:1054** - # TODO: Replace solve with solveset, as of now test fails for solveset
+- [ ] **sympy/utilities/tests/test_wester.py:1061** - # TODO: Replace solve with solveset which gives both [+/- current answer]
+- [ ] **sympy/utilities/tests/test_wester.py:1079** - # TODO: Replace solve with solveset, as of now
+- [ ] **sympy/utilities/tests/test_wester.py:1086** - # TODO: Replace solve with solveset, as of now
+- [ ] **sympy/utilities/tests/test_wester.py:1094** - # TODO: Replace solve with solveset, as of now
+- [ ] **sympy/utilities/tests/test_wester.py:1101** - # TODO: Replace solve with solveset, as of now
+- [ ] **sympy/utilities/tests/test_wester.py:1120** - # TODO: Replace solve with solveset, as of now
+- [ ] **sympy/utilities/tests/test_wester.py:1196** - # TODO: Replace solve with solveset, as of now
+- [ ] **sympy/utilities/tests/test_wester.py:2254** - # TODO: Replace solve with solveset, current test fails for solveset
+- [ ] **sympy/utilities/tests/test_wester.py:3088** - # TODO: Replace solve with solveset, when it works for solveset
+- [ ] **sympy/vector/coordsysrect.py:705** - # TODO: trigsimp is needed here so that the matrix becomes
+- [ ] **sympy/vector/functions.py:159** - # TODO: This gets a random coordinate system in case of multiple ones:
+- [ ] **sympy/vector/functions.py:507** - # TODO : The following line introduces a performance issue
+- [ ] **sympy/vector/operators.py:214** - # TODO: is case of many coord systems, this gets a random one:
+
+## License
+
+The source licenses are retained at the repository root.
